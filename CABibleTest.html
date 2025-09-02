@@ -76,6 +76,9 @@
       header, .controls { display: none !important; }
       html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
+
+    /* PDF: force a new page BEFORE a section wrapper (title stays with content) */
+    .pdf-break-before { page-break-before: always; break-before: page; }
   </style>
 </head>
 <body>
@@ -172,7 +175,7 @@
         <input id="f-${q.id}" type="file" accept="image/*" capture="environment" multiple class="hidden" />
         <div class="thumbs" data-role="userPhotos"></div>
       </div>`;
-    // init state
+    // init per-question state (unique id prevents cross-talk)
     if(!state.items[q.id]) state.items[q.id] = { rating:0, comment:'', photos:[] };
 
     // rating
@@ -260,16 +263,34 @@
   });
 
   // ====== Excel load (autoload only) ======
+  const usedIds = new Set();
+  function sanitizeId(s){
+    return String(s||'').trim().replace(/[^A-Za-z0-9_-]/g,'_').replace(/_+/g,'_').replace(/^_+|_+$/g,'');
+  }
+  function ensureUniqueId(base, fallback){
+    let root = sanitizeId(base) || sanitizeId(fallback) || ('q_'+String(usedIds.size+1));
+    if (!root) root = 'q_'+String(usedIds.size+1);
+    let id = root, n = 1;
+    while (usedIds.has(id)) { n += 1; id = root + '_' + n; }
+    usedIds.add(id);
+    return id;
+  }
+
   async function parseWorkbook(ab){
     const wb = XLSX.read(ab, { type: 'array' });
     const sheetName = wb.SheetNames.find(n => n.toLowerCase() === 'questions') || wb.SheetNames[0];
     const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
     if (!rows.length) { renderSections([]); return; }
     const groups = new Map();
+
     rows.forEach((r,i) => {
       const section = String(r.Section || 'Untitled').trim();
       const sorder = Number(r.SectionOrder || 0) || 0;
-      const id = String(r.QuestionID || ('q_'+(i+1))).trim();
+
+      // Unique ID per question (prevents bleed across sections)
+      const rawId = String(r.QuestionID || '').trim();
+      const id = ensureUniqueId(rawId, 'q_'+(i+1));
+
       const text = String(r.QuestionText || '').trim();
       const qorder = Number(r.QOrder || 0) || 0;
       const refA = [r.RefA1, r.RefA2].map(v => String(v||'').trim()).filter(Boolean);
@@ -277,9 +298,16 @@
       if(!groups.has(section)) groups.set(section, { title: section, order: sorder, questions: [] });
       groups.get(section).questions.push({ id, text, order: qorder, refA, refB });
     });
+
     const sections = Array.from(groups.values())
       .sort((a,b)=>a.order-b.order)
-      .map(sec => ({ title: sec.title, questions: sec.questions.sort((a,b)=>a.order-b.order).map(q => ({ id:q.id, text:q.text, refA:q.refA, refB:q.refB })) }));
+      .map(sec => ({
+        title: sec.title,
+        questions: sec.questions
+          .sort((a,b)=>a.order-b.order)
+          .map(q => ({ id:q.id, text:q.text, refA:q.refA, refB:q.refB }))
+      }));
+
     renderSections(sections);
   }
 
@@ -295,12 +323,12 @@
   $('#who').addEventListener('input', ()=>{ state.who=$('#who').value; markDirty(); });
   $('#when').addEventListener('change', ()=>{ state.when=$('#when').value; markDirty(); });
 
-  // ====== Auto-load path (updated) ======
+  // ====== Auto-load path ======
   const FIXED_XLSX_PATH = 'QuestionsList.xlsx';
   loadExcelFromUrl(FIXED_XLSX_PATH).catch(err => console.warn('Auto-load failed:', err));
 </script>
 
-<!-- ====== Print-safe helpers + PDF Export (ASCII-only; section page breaks) ====== -->
+<!-- ====== Print-safe helpers + PDF Export (ASCII-only; section page breaks BEFORE titles) ====== -->
 <script>
 (function(){
   // Collapse all <details>, return restore() to put them back
@@ -365,7 +393,7 @@
     return arr;
   }
 
-  // Build a clean report with a hard page break before each new section
+  // Build a clean report; each section wrapper can force a page break BEFORE itself.
   function buildSimplifiedPdfEl(){
     var root = el("div", "width:800px; padding:24px; background:#fff; color:#111; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;");
 
@@ -383,16 +411,11 @@
     metaWrap.appendChild(row);
     root.appendChild(metaWrap);
 
-    // Sections (page break between sections)
+    // Sections (new page BEFORE each section except the first)
     var sections = document.querySelectorAll("#sections details.section, details.section");
     sections.forEach(function(sec, idx){
-      if (idx > 0) {
-        var br = el("div"); br.className = "html2pdf__page-break";
-        br.style.cssText = "page-break-before:always; break-before:page;";
-        root.appendChild(br);
-      }
-
       var secWrap = el("section", "margin-top:8px;");
+      if (idx > 0) secWrap.className = "pdf-break-before";
 
       var sum = sec.querySelector("summary");
       var title = sum ? (sum.textContent || "").trim() : "";
@@ -472,7 +495,7 @@
       image: { type: "jpeg", quality: 0.95 },
       html2canvas: { scale: 2, useCORS: true },
       jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
-      pagebreak: { mode: ["css", "legacy"] }   // ensure our hard breaks are obeyed
+      pagebreak: { mode: ["css", "legacy"] }   // obey break-before rules
     };
 
     function cleanup(){
