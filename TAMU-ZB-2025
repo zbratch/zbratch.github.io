@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DBR Engineering — Projects at Texas A&M University - College Station</title>
+  <meta name="description" content="Company-built micro-portfolio showcasing projects delivered at Texas A&M." />
+  <meta property="og:title" content="DBR Engineering — Projects at Texas A&M" />
+  <meta property="og:description" content="Selected projects our team delivered on your campus plus recruiter contacts." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="images/preview.jpg" />
+  <style>
+    :root{
+      --bg:#0f172a; /* slate-900 */
+      --card:#111827; /* gray-900 */
+      --text:#e5e7eb; /* gray-200 */
+      --muted:#9ca3af; /* gray-400 */
+      --accent:#60a5fa; /* blue-400 */
+      --ring:#1f2937; /* gray-800 */
+      --brand:#7c3aed; /* violet-600 (accent alt) */
+    }
+    * { box-sizing: border-box; }
+    html,body { height: 100%; }
+    body{
+      margin:0;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      background: radial-gradient(1200px 800px at 50% -10%, #1f2937 0%, var(--bg) 40%);
+      color: var(--text);
+      display:flex;
+      min-height:100vh;
+    }
+    .wrap{ width:100%; max-width:1100px; margin:auto; padding:24px; }
+
+    /* Header */
+    .hero{ background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.02)); border:1px solid var(--ring); border-radius:20px; padding:18px 20px; display:flex; align-items:center; gap:16px; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .logo{ width:56px; height:56px; border-radius:12px; object-fit:cover; border:1px solid var(--ring); background:#fff; }
+    .hero h1{ margin:0; font-size:1.6rem; }
+    .hero p{ margin:2px 0 0; color:var(--muted); }
+    .badges{ margin-left:auto; display:flex; gap:8px; }
+    .badge{ padding:6px 10px; border-radius:999px; font-size:.8rem; background: rgba(124,58,237,.15); border:1px solid rgba(124,58,237,.4); color:#ddd; white-space:nowrap; }
+
+    .section{ margin-top:28px; }
+    .section h2{ font-size:1.05rem; letter-spacing:.02em; color:var(--muted); margin:0 0 12px; text-transform:uppercase; }
+
+    .grid{ display:grid; gap:16px; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); }
+
+    .card{ background: linear-gradient(180deg, rgba(255,255,255,.03), rgba(255,255,255,.01)); border:1px solid var(--ring); border-radius:16px; overflow:hidden; box-shadow: 0 10px 30px rgba(0,0,0,.25); }
+    .thumb{ width:100%; aspect-ratio:16/10; object-fit:cover; display:block; }
+    .card-body{ padding:14px 14px 16px; }
+    .name{ margin:0 0 6px; font-weight:800; font-size:1.05rem; }
+    .scope{ margin:0; color:var(--muted); line-height:1.45; }
+    .meta{ margin-top:8px; font-size:.85rem; color:var(--muted); }
+
+    .contacts{ display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+    .contact{ border:1px dashed var(--ring); border-radius:12px; padding:12px 14px; background: rgba(255,255,255,.03); }
+    .contact .label{ color:var(--muted); font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
+    .contact .value{ margin-top:4px; }
+    .contact .value a{ color:var(--accent); text-decoration:none; }
+    .contact .value a:hover{ text-decoration:underline; }
+
+    .cta{ margin-top:18px; display:inline-block; padding:10px 14px; border-radius:10px; border:1px solid rgba(96,165,250,.4); background: rgba(96,165,250,.18); color:#e8f2ff; text-decoration:none; font-weight:600; }
+    .cta:hover{ background: rgba(96,165,250,.28); }
+
+    .footer{ margin-top:28px; color:var(--muted); font-size:.85rem; text-align:center; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <!-- Company + School Header -->
+    <section class="hero" aria-label="Header">
+      <img class="logo" src="images/dbrlogo-icononly.png" alt="Company logo" />
+      <div>
+        <h1>DBR Engineering — Projects at <span id="school">TAMU University College Station</span></h1>
+        <p>Selected work our team delivered on your campus. Built by engineers who love real-world impact.</p>
+      </div>
+    </section>
+
+    <!-- Projects Section -->
+    <section class="section" aria-labelledby="projects">
+      <h2 id="projects">Projects on Your Campus</h2>
+      <div class="grid">
+        <!-- COPY this .card for each project delivered at the school -->
+        <article class="card">
+          <img class="thumb" src="images/astonhall.jpg" alt="Project 1 — campus photo or render" loading="lazy" />
+          <div class="card-body">
+            <h3 class="name">Aston Hall</h3>
+            <p class="scope">Full MEP scope from the ground up.</p>
+            <p class="meta">Services: New Building | Mechanical | Electrical | Plumbing | Technology</p>
+          </div>
+        </article>
+
+        <article class="card">
+          <img class="thumb" src="images/nsc.jpg" alt="Project 2 — campus photo or render" loading="lazy" />
+          <div class="card-body">
+            <h3 class="name">Nuclear Science Center</h3>
+            <p class="scope">Renovations to the teaching areas and lab spaces.</p>
+            <p class="meta">Services: Renovation | Mechanical | Electrical | Plumbing | Technology </p>
+          </div>
+        </article>
+
+        <article class="card">
+          <img class="thumb" src="images/project-x.jpg" alt="Project X — campus photo or render" loading="lazy" />
+          <div class="card-body">
+            <h3 class="name">Project X Name (Building / Facility)</h3>
+            <p class="scope">Scope: short description tied to how students interact with the space. Ex: Network & rack design supporting research labs and maker spaces.</p>
+            <p class="meta">Services: Technology • Data • Security • AV</p>
+          </div>
+        </article>
+        <!-- /COPY -->
+      </div>
+      <a class="cta" href="https://your-company.com/careers" target="_blank" rel="noopener">Explore Careers at DBR</a>
+    </section>
+
+    <!-- Recruiters Section -->
+    <section class="section" aria-labelledby="recruiters">
+      <h2 id="recruiters">Talk to Our Recruiters</h2>
+      <div class="contacts">
+        <!-- COPY this block per recruiter -->
+        <div class="contact">
+          <div class="label">Recruiter 1</div>
+          <div class="value"><strong>First Last</strong> — University Relations • <a href="mailto:recruiter@example.com">recruiter@example.com</a> • <a href="https://www.linkedin.com/in/username/">LinkedIn</a></div>
+        </div>
+        <div class="contact">
+          <div class="label">Recruiter 2</div>
+          <div class="value"><strong>First Last</strong> — Discipline Lead • <a href="mailto:lead@example.com">lead@example.com</a> • <a href="tel:+11234567890">(123) 456-7890</a></div>
+        </div>
+        <div class="contact">
+          <div class="label">Recruiter X</div>
+          <div class="value"><strong>First Last</strong> — Title • <a href="https://your-company.com/team">Team Page</a></div>
+        </div>
+        <!-- /COPY -->
+      </div>
+    </section>
+
+    <p class="footer">© 2025 DBR Engineering Consultants • Portfolio prepared for <span id="school-footer">TAMU University College Station</span> Career Fair</p>
+  </main>
+</body>
+</html>
