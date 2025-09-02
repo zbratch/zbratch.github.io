@@ -67,6 +67,15 @@
     details.collapsible > summary { display:flex; align-items:center; justify-content:space-between; }
     details.collapsible > summary .chev { font-size:14px; opacity:.8; transition:transform .15s ease; }
     details.collapsible[open] > summary .chev { transform: rotate(180deg); }
+
+    /* Print/export: hide sticky UI and avoid offsets */
+    body.printing header,
+    body.printing .controls { display: none !important; }
+    body.printing header { position: static !important; }
+    @media print {
+      header, .controls { display: none !important; }
+      html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
 </head>
 <body>
@@ -132,11 +141,11 @@
 
       <!-- References FIRST -->
       <details class="collapsible ref">
-        <summary><span>Good Reference images</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <summary><span>Good Reference Images</span><span class="chev" aria-hidden="true">▾</span></summary>
         <div class="thumbs" data-role="refA">${(q.refA||[]).map(src=>thumbHTML(src)).join('')}</div>
       </details>
       <details class="collapsible ref">
-        <summary><span>Bad Reference images</span><span class="chev" aria-hidden="true">▾</span></summary>
+        <summary><span>Bad Reference Images</span><span class="chev" aria-hidden="true">▾</span></summary>
         <div class="thumbs" data-role="refB">${(q.refB||[]).map(src=>thumbHTML(src)).join('')}</div>
       </details>
 
@@ -286,14 +295,37 @@
   $('#who').addEventListener('input', ()=>{ state.who=$('#who').value; markDirty(); });
   $('#when').addEventListener('change', ()=>{ state.when=$('#when').value; markDirty(); });
 
-  // ====== Auto-load path ======
+  // ====== Auto-load path (updated) ======
   const FIXED_XLSX_PATH = 'QuestionsList.xlsx';
   loadExcelFromUrl(FIXED_XLSX_PATH).catch(err => console.warn('Auto-load failed:', err));
 </script>
 
-<!-- ====== PDF Export (ASCII-only; always prints all fields) ====== -->
+<!-- ====== Print-safe helpers + PDF Export (ASCII-only; always prints all fields) ====== -->
 <script>
 (function(){
+  // Collapse all <details>, return restore() to put them back
+  function snapshotAndCollapseDetails() {
+    var nodes = Array.prototype.slice.call(document.querySelectorAll('details'));
+    var states = nodes.map(function(n){ return n.open; });
+    nodes.forEach(function(n){ n.open = false; });
+    return function restore(){ nodes.forEach(function(n,i){ n.open = states[i]; }); };
+  }
+
+  // Make native printing safe, too
+  (function(){
+    var restorePrint = null;
+    window.addEventListener('beforeprint', function(){
+      restorePrint = snapshotAndCollapseDetails();
+      document.body.classList.add('printing');
+      window.scrollTo(0,0);
+    });
+    window.addEventListener('afterprint', function(){
+      if (restorePrint) restorePrint();
+      restorePrint = null;
+      document.body.classList.remove('printing');
+    });
+  })();
+
   function escapeHTML(s){
     return String(s == null ? "" : s).replace(/[&<>"]/g, function(m){
       return ({ "&":"&amp;", "<":"&lt;", ">":"&gt;", '"':"&quot;" })[m];
@@ -404,6 +436,11 @@
     return root;
   }
   function exportPDF(){
+    // Collapse all details + enter "printing" mode to avoid any offsets
+    var restore = snapshotAndCollapseDetails();
+    document.body.classList.add('printing');
+    window.scrollTo(0,0);
+
     var el = buildSimplifiedPdfEl();
     document.body.appendChild(el);
 
@@ -419,9 +456,13 @@
       jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
     };
 
-    html2pdf().set(opt).from(el).save()
-      .then(function(){ el.remove(); })
-      .catch(function(){ el.remove(); });
+    function cleanup(){
+      try { el.remove(); } catch(e){}
+      document.body.classList.remove('printing');
+      try { restore(); } catch(e){}
+    }
+
+    html2pdf().set(opt).from(el).save().then(cleanup).catch(cleanup);
   }
   var btn = document.getElementById("exportPDF");
   if (btn) btn.addEventListener("click", exportPDF);
