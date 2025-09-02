@@ -90,23 +90,25 @@
 </div>
 
 <div class="controls">
-  <button class="btn" id="exportZip">Download .zip</button>
-  <button class="btn" id="exportHTML">Download single .html</button>
-  <button class="btn secondary" id="share">Share…</button>
+  <button class="btn" id="exportPDF">Download PDF</button>
+  <button class="btn" id="exportHTML">Download JSON</button>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
 <script>
 // Fixed Excel path (change this to match your repo)
-const FIXED_XLSX_PATH = 'QuestionsList.xlsx';
+const FIXED_XLSX_PATH = 'data/FormTemplate.xlsx';
 
 const state = { project:'', who:'', when:'', items: {} };
+let CURRENT_SECTIONS = [];
 const $ = sel => document.querySelector(sel);
 
 function markSaved(){ $('#saveState').textContent='Up to date'; }
 function markDirty(){ $('#saveState').textContent='Saving…'; setTimeout(markSaved,250); }
+function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
 
 function thumbHTML(src){ return `<div class=\"thumb\"><img src=\"${src}\" alt=\"\" /></div>`; }
 function buildThumbFromDataURL(dataUrl){ const d=document.createElement('div'); d.className='thumb'; d.innerHTML=`<img alt="photo" src="${dataUrl}">`; return d; }
@@ -188,17 +190,73 @@ function buildSection(sec){
 function renderSections(sections){
   const mount = document.getElementById('sections');
   mount.innerHTML = '';
+  CURRENT_SECTIONS = sections || [];
   sections.forEach(sec => mount.appendChild(buildSection(sec)));
-  // ensure all sections are collapsed after render
   requestAnimationFrame(()=> document.querySelectorAll('details.section').forEach(d=> d.removeAttribute('open')));
 }
 
 function gatherExportPayload(){ return { meta:{ project:$('#project').value.trim(), who:$('#who').value.trim(), when: $('#when').value || new Date().toISOString().slice(0,10) }, items: state.items }; }
 
+// JSON export (debug/manual)
 $('#exportHTML').addEventListener('click', ()=>{ const data=gatherExportPayload(); const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); saveAs(blob, `feedback_${Date.now()}.json`); });
-$('#exportZip').addEventListener('click', ()=>{ alert('ZIP export not wired in this slim file yet—I can merge that in next.'); });
-$('#share').addEventListener('click', ()=>{ alert('Share not wired in this slim file yet—can add back easily.'); });
 
+// --- PDF export ---
+function buildPdfReportEl(){
+  const meta = { project: $('#project').value.trim(), who: $('#who').value.trim(), when: $('#when').value || new Date().toISOString().slice(0,10) };
+  const el = document.createElement('div');
+  el.className = 'pdf-report';
+  el.style.cssText = 'width:800px; padding:24px; background:#fff; color:#111; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;';
+  el.innerHTML = `
+    <header style="border-bottom:1px solid #e5e7eb; margin-bottom:12px; padding-bottom:8px;">
+      <h1 style="margin:0 0 6px; font:700 22px/1.2 system-ui;">Field Survey Report</h1>
+      <div style="display:flex; gap:16px; flex-wrap:wrap; color:#333; font:14px/1.4 system-ui;">
+        <div><strong>Project #:</strong> ${escapeHTML(meta.project)}</div>
+        <div><strong>Date:</strong> ${escapeHTML(meta.when)}</div>
+        <div><strong>Surveyor:</strong> ${escapeHTML(meta.who)}</div>
+      </div>
+    </header>`;
+
+  CURRENT_SECTIONS.forEach(sec => {
+    const secBlock = document.createElement('section');
+    secBlock.style.cssText = 'margin-top:10px; padding-top:8px;';
+    const h2 = document.createElement('h2');
+    h2.textContent = sec.title;
+    h2.style.cssText = 'font:600 18px/1.3 system-ui; margin:0 0 6px;';
+    secBlock.appendChild(h2);
+
+    (sec.questions||[]).forEach(q => {
+      const it = state.items[q.id] || { rating:0, comment:'', photos:[] };
+      const qdiv = document.createElement('div');
+      qdiv.style.cssText = 'border:1px solid #e5e7eb; border-radius:10px; padding:10px; margin:8px 0; page-break-inside: avoid;';
+      qdiv.innerHTML = `
+        <div style=\"font:600 15px/1.3 system-ui; margin:0 0 4px;\">${escapeHTML(q.text)}</div>
+        <div style=\"font:14px system-ui; color:#444; margin:0 0 6px;\">Rating: ${'★'.repeat(it.rating||0)}${'☆'.repeat(5-(it.rating||0))}</div>
+        ${it.comment ? `<div style=\"white-space:pre-wrap; font:14px/1.5 system-ui; color:#222; margin:0 0 8px;\">${escapeHTML(it.comment)}</div>` : ''}
+      `;
+      if (it.photos && it.photos.length){
+        const grid = document.createElement('div');
+        grid.style.cssText = 'display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;';
+        it.photos.forEach(p => { const img=document.createElement('img'); img.src=p.dataUrl; img.alt='photo'; img.style.cssText='width:100%; height:170px; object-fit:cover; border:1px solid #ddd; border-radius:8px;'; grid.appendChild(img); });
+        qdiv.appendChild(grid);
+      }
+      secBlock.appendChild(qdiv);
+    });
+    el.appendChild(secBlock);
+  });
+  return el;
+}
+
+function exportPDF(){
+  const el = buildPdfReportEl();
+  document.body.appendChild(el);
+  const file = `survey_${($('#project').value.trim()||'project')}_${($('#when').value||new Date().toISOString().slice(0,10))}.pdf`.replace(/\s+/g,'_');
+  const opt = { margin: 0.5, filename: file, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
+  html2pdf().set(opt).from(el).save().then(()=> el.remove()).catch(()=> el.remove());
+}
+
+$('#exportPDF').addEventListener('click', exportPDF);
+
+// ------- EXCEL LOADING (autoload only)
 async function parseWorkbook(ab){
   const wb = XLSX.read(ab, { type: 'array' });
   const sheetName = wb.SheetNames.find(n => n.toLowerCase() === 'questions') || wb.SheetNames[0];
@@ -229,8 +287,10 @@ async function loadExcelFromUrl(url){
   await parseWorkbook(ab);
 }
 
+// Auto-load from fixed path on startup
 loadExcelFromUrl(FIXED_XLSX_PATH).catch(err => console.warn('Auto-load failed:', err));
 
+// Meta events
 $('#project').addEventListener('input', ()=>{ state.project=$('#project').value; markDirty(); });
 $('#who').addEventListener('input', ()=>{ state.who=$('#who').value; markDirty(); });
 $('#when').addEventListener('change', ()=>{ state.when=$('#when').value; markDirty(); });
