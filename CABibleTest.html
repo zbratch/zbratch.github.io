@@ -83,13 +83,6 @@
     </div>
   </div>
 
-  <!-- Config Loader (manual override) -->
-  <div class="card">
-    <strong>Load form from Excel</strong>
-    <p class="muted">Upload a .xlsx with sheet <code>Questions</code> and columns: <code>Section, SectionOrder, QuestionID, QuestionText, QOrder, RefA1, RefA2, RefB1, RefB2</code>.</p>
-    <input id="cfgXlsx" type="file" accept=".xlsx,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
-  </div>
-
   <!-- Sections + Questions mount -->
   <div id="sections"></div>
 </div>
@@ -115,7 +108,7 @@ function markSaved(){ $('#saveState').textContent='Saved'; setTimeout(()=>$('#sa
 function markDirty(){ $('#saveState').textContent='Saving…'; setTimeout(()=>markSaved(),200); }
 
 // ------- BUILDERS
-function thumbHTML(src){ return `<div class="thumb"><img src="${src}" alt="" /></div>`; }
+function thumbHTML(src){ return `<div class=\"thumb\"><img src=\"${src}\" alt=\"\" /></div>`; }
 
 function buildThumbFromDataURL(dataUrl){ const d=document.createElement('div'); d.className='thumb'; d.innerHTML=`<img alt="photo" src="${dataUrl}"><button class="del" title="Remove">×</button>`; d.querySelector('.del').addEventListener('click',()=>{ for(const id in state.items){ const idx=state.items[id].photos.findIndex(p=>p.dataUrl===dataUrl); if(idx!==-1){ state.items[id].photos.splice(idx,1); break; } } d.remove(); markDirty(); }); return d; }
 
@@ -210,7 +203,7 @@ $('#exportHTML').addEventListener('click', ()=>{
 $('#exportZip').addEventListener('click', ()=>{ alert('ZIP export not wired in this slim file yet—use the earlier full export version or ask me to merge them.'); });
 $('#share').addEventListener('click', ()=>{ alert('Share not wired in this slim file yet—can add back easily.'); });
 
-// ------- EXCEL LOADING
+// ------- EXCEL LOADING (autoload only)
 async function parseWorkbook(ab){
   const wb = XLSX.read(ab, { type: 'array' });
   const sheetName = wb.SheetNames.find(n => n.toLowerCase() === 'questions') || wb.SheetNames[0];
@@ -239,13 +232,6 @@ async function loadExcelFromUrl(url){
   const ab = await res.arrayBuffer();
   await parseWorkbook(ab);
 }
-
-// Manual upload override
-const inputXlsx = document.getElementById('cfgXlsx');
-inputXlsx.addEventListener('change', async () => {
-  const file = inputXlsx.files?.[0]; if(!file) return;
-  const ab = await file.arrayBuffer(); await parseWorkbook(ab);
-});
 
 // Auto-load from fixed path on startup
 loadExcelFromUrl(FIXED_XLSX_PATH).catch(err => console.warn('Auto-load failed:', err));
