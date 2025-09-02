@@ -25,8 +25,7 @@
     .star.on { color: #ffd452; text-shadow: 0 0 6px rgba(255,212,82,.35); }
     .star:active { transform: scale(.9); }
 
-    textarea, input[type="text"], input[type="date"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #293043; background:#0f1117; color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
-    textarea { min-height: 88px; resize: vertical; }
+    textarea { width: 100%; min-height: 88px; padding: 10px 12px; border-radius: 10px; border: 1px solid #293043; resize: vertical; background:#0f1117; color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
 
     details { border: 1px solid #23293a; border-radius: 10px; overflow: hidden; }
     details + details { margin-top: 8px; }
@@ -46,16 +45,23 @@
     .chip { display:inline-flex; align-items:center; gap:6px; padding: 6px 10px; font-size: 12px; border-radius: 999px; border:1px solid #27314d; background:#0f1320; }
 
     .grid { display: grid; gap: 14px; }
-    @media (min-width: 760px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+@media (min-width: 760px) { .grid { grid-template-columns: 1fr 1fr 1fr; } }
+.hidden { display:none !important; }
+/* Section wrappers */
+.section { border: 1px solid #1b1f2a; border-radius: var(--radius); overflow: hidden; background: #0f121a; }
+.section + .section { margin-top: 12px; }
+.section > summary { list-style: none; cursor: pointer; font-weight: 700; padding: 12px 14px; background: #0f121a; border-bottom: 1px solid #1b1f2a; }
+.section > summary::-webkit-details-marker { display:none; }
+.section-body { padding: 12px; background: transparent; }
 
-    .hidden { display:none !important; }
-
-    /* Section wrappers (collapsible by default) */
-    .section { border: 1px solid #1b1f2a; border-radius: var(--radius); overflow: hidden; background: #0f121a; }
-    .section + .section { margin-top: 12px; }
-    .section > summary { list-style: none; cursor: pointer; font-weight: 700; padding: 12px 14px; background: #0f121a; border-bottom: 1px solid #1b1f2a; }
-    .section > summary::-webkit-details-marker { display:none; }
-    .section-body { padding: 12px; background: transparent; }
+/* --- Compact meta bar styles --- */
+#meta { padding: 10px 12px; }
+.meta-grid { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; }
+.field { flex: 1 1 220px; min-width: 200px; }
+.label { display:block; margin:0 0 6px; color: var(--muted); font-size: 13px; }
+.input { width:100%; height:42px; padding:10px 12px; border-radius:10px; border:1px solid #293043; background:#0f1117; color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
+input[type="date"].input { appearance:none; -webkit-appearance:none; }
+input[type="date"].input::-webkit-calendar-picker-indicator { filter: invert(0.8); opacity: 0.7; }
   </style>
 </head>
 <body>
@@ -68,23 +74,34 @@
 
 <div class="container">
   <!-- Meta: Project # / Date / Surveyor -->
-  <div class="card grid" id="meta">
-    <div>
-      <label class="muted" for="project">Project #</label><br/>
-      <input id="project" placeholder="e.g., 234001" />
+  <div class="card" id="meta">
+    <div class="meta-grid">
+      <div class="field">
+        <label class="label" for="project">Project #</label>
+        <input class="input" id="project" placeholder="e.g., 234001" />
+      </div>
+      <div class="field">
+        <label class="label" for="when">Date</label>
+        <input class="input" id="when" type="date" />
+      </div>
+      <div class="field">
+        <label class="label" for="who">Surveyor name</label>
+        <input class="input" id="who" placeholder="Your name" />
+      </div>
     </div>
+  </div>
     <div>
       <label class="muted" for="when">Date</label><br/>
-      <input id="when" type="date" />
+      <input id="when" type="date" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid #293043; background:#0f1117; color:var(--text);"/>
     </div>
     <div>
       <label class="muted" for="who">Surveyor name</label><br/>
-      <input id="who" placeholder="Your name" />
+      <input id="who" placeholder="Your name" style="width:100%; padding:10px 12px; border-radius:10px; border:1px solid #293043; background:#0f1117; color:var(--text);"/>
     </div>
   </div>
 
-  <!-- Sections + Questions mount -->
-  <div id="sections"></div>
+  <!-- Sections mount (generated from Excel) -->
+  <div id="sectionsMount"></div>
 </div>
 
 <div class="controls">
@@ -97,149 +114,129 @@
 <script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
-// Fixed Excel path (change this to match your repo)
-const FIXED_XLSX_PATH = 'QuestionsList.xlsx';
+const mount = document.getElementById('sectionsMount');
 
-// ------- STATE
-const state = { project:'', who:'', when:'', items: {} };
-const $ = sel => document.querySelector(sel);
-
-function markSaved(){ $('#saveState').textContent='Saved'; setTimeout(()=>$('#saveState').textContent='Up to date',800); }
-function markDirty(){ $('#saveState').textContent='Saving…'; setTimeout(()=>markSaved(),200); }
-
-// ------- BUILDERS
-function thumbHTML(src){ return `<div class=\"thumb\"><img src=\"${src}\" alt=\"\" /></div>`; }
-
-function buildThumbFromDataURL(dataUrl){ const d=document.createElement('div'); d.className='thumb'; d.innerHTML=`<img alt="photo" src="${dataUrl}"><button class="del" title="Remove">×</button>`; d.querySelector('.del').addEventListener('click',()=>{ for(const id in state.items){ const idx=state.items[id].photos.findIndex(p=>p.dataUrl===dataUrl); if(idx!==-1){ state.items[id].photos.splice(idx,1); break; } } d.remove(); markDirty(); }); return d; }
-
-function suggestPhotoName(qid, original){ const safe=original.replace(/[^a-z0-9_.-]+/gi,'_').replace(/_+/g,'_'); const count=state.items[qid].photos?.length||0; const ext=(safe.includes('.')? safe.split('.').pop():'jpg'); return `${qid}_${String(count+1).padStart(2,'0')}.${ext}`; }
-function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
-
-function buildQuestion(q){
-  const wrap = document.createElement('section');
-  wrap.className='card q'; wrap.dataset.id=q.id;
-  wrap.innerHTML = `
-    <h2>${q.text}</h2>
-
-    <!-- References FIRST -->
-    <details style="margin-top:6px;">
-      <summary>Reference images (A)</summary>
-      <div class="thumbs" data-role="refA">${(q.refA||[]).map(src=>thumbHTML(src)).join('')}</div>
-    </details>
-    <details>
-      <summary>Reference images (B)</summary>
-      <div class="thumbs" data-role="refB">${(q.refB||[]).map(src=>thumbHTML(src)).join('')}</div>
-    </details>
-
-    <!-- Rating with label 'Rating:' -->
-    <div class="row" style="margin-top:10px;" aria-label="Star rating" role="group">
-      <span class="muted"><strong>Rating:</strong></span>
-      <div class="stars" role="radiogroup" aria-label="Rating for ${q.text}">
-        ${[1,2,3,4,5].map(i=>`<button class=\"star\" data-v=\"${i}\" aria-label=\"${i} star\" aria-checked=\"false\" role=\"radio\">☆</button>`).join('')}
-      </div>
-      <span class="muted" data-role="ratingStatus"></span>
-    </div>
-
-    <!-- User inputs AFTER references -->
-    <div style="margin-top:10px;">
-      <label class="muted" for="c-${q.id}">Comments</label>
-      <textarea id="c-${q.id}" placeholder="Add your notes…"></textarea>
-    </div>
-
-    <div style="margin-top:10px;">
-      <div class="row" style="justify-content:space-between;">
-        <label class="muted">Your photos</label>
-        <label class="btn secondary" style="padding:6px 10px; font-size:12px;" for="f-${q.id}">Add photos</label>
-      </div>
-      <input id="f-${q.id}" type="file" accept="image/*" capture="environment" multiple class="hidden" />
-      <div class="thumbs" data-role="userPhotos"></div>
-    </div>`;
-
-  state.items[q.id] ||= { rating:0, comment:'', photos:[] };
-
-  const stars = wrap.querySelectorAll('.star');
-  const status = wrap.querySelector('[data-role=ratingStatus]');
-  function paint(n){ stars.forEach((b,i)=>{ const on=i<n; b.textContent = on?'★':'☆'; b.classList.toggle('on',on); b.setAttribute('aria-checked', on && i===n-1 ? 'true':'false'); }); status.textContent = n? `${n}/5`:''; }
-  stars.forEach(btn=>btn.addEventListener('click',()=>{ state.items[q.id].rating=Number(btn.dataset.v); paint(state.items[q.id].rating); markDirty(); }));
-
-  const ta = wrap.querySelector('textarea'); ta.value = state.items[q.id].comment || ''; ta.addEventListener('input',()=>{ state.items[q.id].comment=ta.value; markDirty(); });
-
-  const input = wrap.querySelector(`#f-${q.id}`); const gallery = wrap.querySelector('[data-role=userPhotos]');
-  input.addEventListener('change', async ()=>{
-    const files = Array.from(input.files||[]);
-    for(const f of files){ const dataUrl = await fileToDataURL(f); state.items[q.id].photos.push({ name:suggestPhotoName(q.id,f.name), type:f.type, dataUrl }); gallery.appendChild(buildThumbFromDataURL(dataUrl)); }
-    input.value=''; markDirty();
-  });
-
-  if(state.items[q.id].photos?.length){ state.items[q.id].photos.forEach(p=>gallery.appendChild(buildThumbFromDataURL(p.dataUrl))); }
-  paint(state.items[q.id].rating||0);
-  return wrap;
-}
-
-function buildSection(sec){
-  const det = document.createElement('details'); det.className='section'; det.open = false; // start collapsed
-  det.innerHTML = `<summary>${sec.title}</summary>`;
-  const inner = document.createElement('div'); inner.className='section-body';
-  (sec.questions||[]).forEach(q=> inner.appendChild(buildQuestion(q)));
-  det.appendChild(inner); return det;
-}
-
-// ------- RENDER
 function renderSections(sections){
-  const mount = document.getElementById('sections');
   mount.innerHTML = '';
-  sections.forEach(sec => mount.appendChild(buildSection(sec)));
-}
+  sections.forEach(sec => {
+    const det = document.createElement('details');
+    det.className = 'card';
+    det.open = true;
+    det.innerHTML = `<summary>${sec.title}</summary>`;
 
-// ------- EXPORTS (kept minimal for this version)
-function gatherExportPayload(){ return { meta:{ project:$('#project').value.trim(), who:$('#who').value.trim(), when: $('#when').value || new Date().toISOString().slice(0,10) }, items: state.items }; }
+    (sec.questions||[]).forEach(q => {
+      const block = document.createElement('div');
+      block.className = 'q';
+      block.dataset.id = q.id;
+      block.innerHTML = `
+        <h3>${q.text}</h3>
+        <div class="stars" aria-label="star rating" role="radiogroup">
+          ${[1,2,3,4,5].map(i=>`<button class="star" data-v="${i}" aria-label="${i} stars">☆</button>`).join('')}
+        </div>
+        <textarea placeholder="Add comments..."></textarea>
+        <input type="file" accept="image/*" multiple>
+        <details>
+          <summary>Reference (A)</summary>
+          <div class="thumbs">
+            ${q.refA.filter(Boolean).slice(0,2).map(src=>`<div class='thumb'><img src='${src}' alt='A'></div>`).join('') || '<div class="muted" style="padding:10px;">No images</div>'}
+          </div>
+        </details>
+        <details>
+          <summary>Reference (B)</summary>
+          <div class="thumbs">
+            ${q.refB.filter(Boolean).slice(0,2).map(src=>`<div class='thumb'><img src='${src}' alt='B'></div>`).join('') || '<div class="muted" style="padding:10px;">No images</div>'}
+          </div>
+        </details>
+      `;
+      det.appendChild(block);
+    });
 
-$('#exportHTML').addEventListener('click', ()=>{
-  const data = gatherExportPayload();
-  const blob = new Blob([JSON.stringify(data,null,2)],{type:'application/json'});
-  saveAs(blob, `feedback_${Date.now()}.json`);
-});
-
-$('#exportZip').addEventListener('click', ()=>{ alert('ZIP export not wired in this slim file yet—use the earlier full export version or ask me to merge them.'); });
-$('#share').addEventListener('click', ()=>{ alert('Share not wired in this slim file yet—can add back easily.'); });
-
-// ------- EXCEL LOADING (autoload only)
-async function parseWorkbook(ab){
-  const wb = XLSX.read(ab, { type: 'array' });
-  const sheetName = wb.SheetNames.find(n => n.toLowerCase() === 'questions') || wb.SheetNames[0];
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
-  const groups = new Map();
-  rows.forEach((r,i) => {
-    const section = String(r.Section || 'Untitled').trim();
-    const sorder = Number(r.SectionOrder || 0) || 0;
-    const id = String(r.QuestionID || `q_${i+1}`).trim();
-    const text = String(r.QuestionText || '').trim();
-    const qorder = Number(r.QOrder || 0) || 0;
-    const refA = [r.RefA1, r.RefA2].map(v => String(v||'').trim()).filter(Boolean);
-    const refB = [r.RefB1, r.RefB2].map(v => String(v||'').trim()).filter(Boolean);
-    if(!groups.has(section)) groups.set(section, { title: section, order: sorder, questions: [] });
-    groups.get(section).questions.push({ id, text, order: qorder, refA, refB });
+    mount.appendChild(det);
   });
-  const sections = Array.from(groups.values())
-    .sort((a,b)=>a.order-b.order)
-    .map(sec => ({ title: sec.title, questions: sec.questions.sort((a,b)=>a.order-b.order).map(q => ({ id:q.id, text:q.text, refA:q.refA, refB:q.refB })) }));
-  renderSections(sections);
+
+  // Wire up star widgets for new DOM
+  mount.querySelectorAll('.stars').forEach(group => {
+    const btns = group.querySelectorAll('.star');
+    btns.forEach(btn => btn.addEventListener('click', () => {
+      btns.forEach(b => b.textContent = '☆');
+      for(let i=0;i<Number(btn.dataset.v);i++){ btns[i].textContent = '★'; }
+    }));
+  });
 }
 
 async function loadExcelFromUrl(url){
-  const res = await fetch(new URL(url, document.baseURI), { cache: 'no-store' });
-  if(!res.ok) throw new Error(`Failed to fetch Excel at ${url}`);
-  const ab = await res.arrayBuffer();
-  await parseWorkbook(ab);
+  try{
+    const res = await fetch(url);
+    const ab = await res.arrayBuffer();
+    const wb = XLSX.read(ab,{type:'array'});
+    const sheetName = wb.SheetNames.find(n=>n.toLowerCase()==='questions') || wb.SheetNames[0];
+    const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], {defval:''});
+    const groups = new Map();
+    rows.forEach((r,i)=>{
+      const section = String(r.Section||'Untitled').trim();
+      const sorder = Number(r.SectionOrder||0)||0;
+      const id = String(r.QuestionID||`q_${i+1}`).trim();
+      const text = String(r.QuestionText||'').trim();
+      const qorder = Number(r.QOrder||0)||0;
+      const refA = [r.RefA1,r.RefA2].map(v=>String(v||'').trim()).filter(Boolean);
+      const refB = [r.RefB1,r.RefB2].map(v=>String(v||'').trim()).filter(Boolean);
+      if(!groups.has(section)) groups.set(section,{title:section,order:sorder,questions:[]});
+      groups.get(section).questions.push({id,text,order:qorder,refA,refB});
+    });
+    const sections = Array.from(groups.values())
+      .sort((a,b)=>a.order-b.order)
+      .map(sec=>({title:sec.title,questions:sec.questions.sort((a,b)=>a.order-b.order)}));
+    renderSections(sections);
+  }catch(e){
+    console.error('Failed to load Excel:',e);
+    mount.innerHTML = '<div class="card">Could not load questionnaire.</div>';
+  }
 }
 
-// Auto-load from fixed path on startup
-loadExcelFromUrl(FIXED_XLSX_PATH).catch(err => console.warn('Auto-load failed:', err));
-
-// Meta events
-$('#project').addEventListener('input', ()=>{ state.project=$('#project').value; markDirty(); });
-$('#who').addEventListener('input', ()=>{ state.who=$('#who').value; markDirty(); });
-$('#when').addEventListener('change', ()=>{ state.when=$('#when').value; markDirty(); });
+// Auto-load Excel file from fixed path in your repo
+// Change this path to match your repo structure (e.g., 'data/FormTemplate.xlsx')
+loadExcelFromUrl('FormTemplate.xlsx');
+</script>
+<script>
+// --- Auto-load Excel from fixed path ---
+(function(){
+  const FIXED_XLSX_PATH = 'QuestionsList.xlsx'; // <-- change this path
+  if (!window.fetch) return; // very old browsers
+  async function autoload(){
+    try {
+      const res = await fetch(FIXED_XLSX_PATH, { cache: 'no-store' });
+      if(!res.ok) return;
+      const ab = await res.arrayBuffer();
+      const wb = XLSX.read(ab, { type: 'array' });
+      const sheetName = wb.SheetNames.find(n => n.toLowerCase() === 'questions') || wb.SheetNames[0];
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
+      const groups = new Map();
+      rows.forEach((r,i) => {
+        const section = String(r.Section || 'Untitled').trim();
+        const sorder = Number(r.SectionOrder || 0) || 0;
+        const id = String(r.QuestionID || `q_${i+1}`).trim();
+        const text = String(r.QuestionText || '').trim();
+        const qorder = Number(r.QOrder || 0) || 0;
+        const refA = [r.RefA1, r.RefA2].map(v => String(v||'').trim()).filter(Boolean);
+        const refB = [r.RefB1, r.RefB2].map(v => String(v||'').trim()).filter(Boolean);
+        if(!groups.has(section)) groups.set(section, { title: section, order: sorder, questions: [] });
+        groups.get(section).questions.push({ id, text, order: qorder, refA, refB });
+      });
+      const sections = Array.from(groups.values())
+        .sort((a,b)=>a.order-b.order)
+        .map(sec => ({ title: sec.title, questions: sec.questions.sort((a,b)=>a.order-b.order).map(q => ({ id:q.id, text:q.text, refA:q.refA, refB:q.refB })) }));
+      if (typeof renderSections === 'function') {
+        renderSections(sections);
+      }
+    } catch (e) { console.warn('Auto-load Excel failed:', e); }
+  }
+  // Try once after page load (give DOM a moment to set up)
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    setTimeout(autoload, 200);
+  } else {
+    window.addEventListener('DOMContentLoaded', () => setTimeout(autoload, 200));
+  }
+})();
 </script>
 </body>
 </html>
