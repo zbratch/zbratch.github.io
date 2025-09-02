@@ -1,299 +1,111 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Field Feedback Form</title>
-  <style>
-    :root { --gap:14px; --radius:14px; --bg:#0b0c0f; --card:#12141a; --muted:#8b93a6; --text:#e9ecf1; }
-    html, body { height:100%; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:var(--bg); color:var(--text); }
-    header { position: sticky; top:0; z-index: 2; background: linear-gradient(180deg, rgba(11,12,15,.95), rgba(11,12,15,.75)); backdrop-filter: blur(6px); border-bottom: 1px solid #1b1f2a; }
-    header .wrap { display:flex; align-items:center; gap: var(--gap); padding: 12px 16px; }
-    h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
+<script id="pdf-export">
+  // PDF export: question + user inputs only (always print fields)
+  function escapeHTML(s) {
+    return String(s ?? "").replace(/[&<>"]/g, m => (
+      { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[m]
+    ));
+  }
 
-    .container { padding: 16px; }
-    .card { background: var(--card); border: 1px solid #1b1f2a; border-radius: var(--radius); padding: 14px; box-shadow: 0 10px 25px rgba(0,0,0,.25); }
+  // Build a clean, standalone report element from current state + DOM
+  function buildSimplifiedPdfEl() {
+    // Meta
+    const meta = {
+      project: (document.querySelector('#meta #project')?.value || '').trim(),
+      when: document.querySelector('#meta #when')?.value || new Date().toISOString().slice(0,10),
+      who: (document.querySelector('#meta #who')?.value || '').trim(),
+    };
 
-    /* Meta row tidy styles */
-    #meta { padding: 10px 12px; }
-    .meta-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; align-items: end; }
-    .field { min-width: 0; }
-    .label { display:block; margin:0 0 6px; color: var(--muted); font-size: 13px; }
-    .input { width:100%; height:42px; padding:10px 12px; border-radius:10px; border:1px solid #293043; background:#0f1117; color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
-    input[type="date"].input { appearance:none; -webkit-appearance:none; }
-    input[type="date"].input::-webkit-calendar-picker-indicator { filter: invert(0.8); opacity: 0.7; }
+    const root = document.createElement('div');
+    root.style.cssText = 'width:800px; padding:24px; background:#fff; color:#111; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;';
 
-    /* Sections */
-    .section { border: 1px solid #1b1f2a; border-radius: var(--radius); overflow: hidden; background: #0f121a; }
-    .section + .section { margin-top: 12px; }
-    .section > summary { list-style: none; cursor: pointer; font-weight: 700; padding: 12px 14px; background: #0f121a; border-bottom: 1px solid #1b1f2a; }
-    .section > summary::-webkit-details-marker { display:none; }
-    .section-body { padding: 12px; }
+    root.innerHTML = `
+      <header style="border-bottom:1px solid #e5e7eb; margin-bottom:12px; padding-bottom:8px;">
+        <h1 style="margin:0 0 6px; font:700 20px/1.2 system-ui;">Survey Responses</h1>
+        <div style="display:flex; gap:16px; flex-wrap:wrap; color:#333; font:14px/1.4 system-ui;">
+          <div><strong>Project #:</strong> ${escapeHTML(meta.project)}</div>
+          <div><strong>Date:</strong> ${escapeHTML(meta.when)}</div>
+          <div><strong>Surveyor:</strong> ${escapeHTML(meta.who)}</div>
+        </div>
+      </header>
+    `;
 
-    .q { margin-bottom: 16px; }
-    .q h2 { font-size: 16px; margin: 0 0 8px; }
-    .muted { color: var(--muted); font-size: 13px; }
-
-    .row { display:flex; align-items:center; gap: 10px; flex-wrap: wrap; }
-
-    .stars { display: inline-flex; gap: 6px; }
-    .star { background: none; border: 0; font-size: 22px; line-height: 1; cursor: pointer; color: #4c546a; transition: transform .05s ease; }
-    .star.on { color: #ffd452; text-shadow: 0 0 6px rgba(255,212,82,.35); }
-    .star:active { transform: scale(.9); }
-
-    textarea { width: 100%; min-height: 88px; padding: 10px 12px; border-radius: 10px; border: 1px solid #293043; resize: vertical; background:#0f1117; color: var(--text); box-shadow: inset 0 1px 0 rgba(255,255,255,.03); }
-
-    details { border: 1px solid #23293a; border-radius: 10px; overflow: hidden; }
-    details + details { margin-top: 8px; }
-    summary { list-style: none; cursor: pointer; padding: 10px 12px; background: #0f121a; font-weight: 600; }
-    summary::-webkit-details-marker { display: none; }
-
-    .thumbs { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap:8px; padding: 10px; }
-    .thumb { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid #2a3045; }
-    .thumb img { display:block; width: 100%; height: 100px; object-fit: cover; }
-
-    .controls { position: sticky; bottom: 0; z-index: 2; background: linear-gradient(0deg, rgba(11,12,15,.98), rgba(11,12,15,.88)); padding: 10px 16px; border-top: 1px solid #1b1f2a; display:flex; flex-wrap: wrap; gap: 8px; }
-    .btn { appearance:none; border: 1px solid #2a75ff55; background: #1a2540; color:#e8f0ff; padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; }
-    .btn.secondary { background: #111522; border-color: #26314d; color: #d7dceb; }
-  </style>
-</head>
-<body>
-<header>
-  <div class="wrap">
-    <h1>Field Feedback Form</h1>
-    <span class="muted" id="saveState">Up to date</span>
-  </div>
-</header>
-
-<div class="container">
-  <!-- Meta: Project # / Date / Surveyor -->
-  <div class="card" id="meta">
-    <div class="meta-row">
-      <div class="field">
-        <label class="label" for="project">Project #</label>
-        <input class="input" id="project" placeholder="e.g., 234001" />
-      </div>
-      <div class="field">
-        <label class="label" for="when">Date</label>
-        <input class="input" id="when" type="date" />
-      </div>
-      <div class="field">
-        <label class="label" for="who">Surveyor name</label>
-        <input class="input" id="who" placeholder="Your name" />
-      </div>
-    </div>
-  </div>
-
-  <!-- Sections + Questions mount -->
-  <div id="sections"></div>
-</div>
-
-<div class="controls">
-  <button class="btn" id="exportPDF">Download PDF</button>
-  <button class="btn" id="exportHTML">Download JSON</button>
-</div>
-
-<script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/file-saver@2.0.5/dist/FileSaver.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/html2pdf.js@0.10.1/dist/html2pdf.bundle.min.js"></script>
-<script>
-// Fixed Excel path (change this to match your repo)
-const FIXED_XLSX_PATH = 'QuestionsList.xlsx';
-
-const state = { project:'', who:'', when:'', items: {} };
-let CURRENT_SECTIONS = [];
-const $ = sel => document.querySelector(sel);
-
-function markSaved(){ $('#saveState').textContent='Up to date'; }
-function markDirty(){ $('#saveState').textContent='Saving…'; setTimeout(markSaved,250); }
-function escapeHTML(s){ return String(s).replace(/[&<>"']/g, m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[m])); }
-
-function thumbHTML(src){ return `<div class=\"thumb\"><img src=\"${src}\" alt=\"\" /></div>`; }
-function buildThumbFromDataURL(dataUrl){ const d=document.createElement('div'); d.className='thumb'; d.innerHTML=`<img alt="photo" src="${dataUrl}">`; return d; }
-function suggestPhotoName(qid, original){ const safe=original.replace(/[^a-z0-9_.-]+/gi,'_').replace(/_+/g,'_'); const count=state.items[qid].photos?.length||0; const ext=(safe.includes('.')? safe.split('.').pop():'jpg'); return `${qid}_${String(count+1).padStart(2,'0')}.${ext}`; }
-function fileToDataURL(file){ return new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(r.result); r.onerror=rej; r.readAsDataURL(file); }); }
-
-function buildQuestion(q){
-  const wrap = document.createElement('section');
-  wrap.className='card q'; wrap.dataset.id=q.id;
-  wrap.innerHTML = `
-    <h2>${q.text}</h2>
-
-    <!-- References FIRST -->
-    <details>
-      <summary>Reference images (A)</summary>
-      <div class="thumbs" data-role="refA">${(q.refA||[]).map(src=>thumbHTML(src)).join('')}</div>
-    </details>
-    <details>
-      <summary>Reference images (B)</summary>
-      <div class="thumbs" data-role="refB">${(q.refB||[]).map(src=>thumbHTML(src)).join('')}</div>
-    </details>
-
-    <!-- Rating with label 'Rating:' -->
-    <div class="row" style="margin-top:10px;" aria-label="Star rating" role="group">
-      <span class="muted"><strong>Rating:</strong></span>
-      <div class="stars" role="radiogroup" aria-label="Rating for ${q.text}">
-        ${[1,2,3,4,5].map(i=>`<button class=\"star\" data-v=\"${i}\" aria-label=\"${i} star\" aria-checked=\"false\" role=\"radio\">☆</button>`).join('')}
-      </div>
-      <span class="muted" data-role="ratingStatus"></span>
-    </div>
-
-    <!-- User inputs AFTER references -->
-    <div style="margin-top:10px;">
-      <label class="muted" for="c-${q.id}">Comments</label>
-      <textarea id="c-${q.id}" placeholder="Add your notes…"></textarea>
-    </div>
-
-    <div style="margin-top:10px;">
-      <div class="row" style="justify-content:space-between;">
-        <label class="muted">Your photos</label>
-        <label class="btn secondary" style="padding:6px 10px; font-size:12px;" for="f-${q.id}">Add photos</label>
-      </div>
-      <input id="f-${q.id}" type="file" accept="image/*" capture="environment" multiple class="hidden" />
-      <div class="thumbs" data-role="userPhotos"></div>
-    </div>`;
-
-  state.items[q.id] ||= { rating:0, comment:'', photos:[] };
-
-  const stars = wrap.querySelectorAll('.star');
-  const status = wrap.querySelector('[data-role=ratingStatus]');
-  function paint(n){ stars.forEach((b,i)=>{ const on=i<n; b.textContent = on?'★':'☆'; b.classList.toggle('on',on); b.setAttribute('aria-checked', on && i===n-1 ? 'true':'false'); }); status.textContent = n? `${n}/5`:''; }
-  stars.forEach(btn=>btn.addEventListener('click',()=>{ state.items[q.id].rating=Number(btn.dataset.v); paint(state.items[q.id].rating); markDirty(); }));
-
-  const ta = wrap.querySelector('textarea'); ta.value = state.items[q.id].comment || ''; ta.addEventListener('input',()=>{ state.items[q.id].comment=ta.value; markDirty(); });
-
-  const input = wrap.querySelector(`#f-${q.id}`); const gallery = wrap.querySelector('[data-role=userPhotos]');
-  input.addEventListener('change', async ()=>{
-    const files = Array.from(input.files||[]);
-    for(const f of files){ const dataUrl = await fileToDataURL(f); state.items[q.id].photos.push({ name:suggestPhotoName(q.id,f.name), type:f.type, dataUrl }); gallery.appendChild(buildThumbFromDataURL(dataUrl)); }
-    input.value=''; markDirty();
-  });
-
-  if(state.items[q.id].photos?.length){ state.items[q.id].photos.forEach(p=>gallery.appendChild(buildThumbFromDataURL(p.dataUrl))); }
-  paint(state.items[q.id].rating||0);
-
-  // ensure inner <details> (refs) start closed
-  wrap.querySelectorAll('details').forEach(d=> d.removeAttribute('open'));
-  return wrap;
-}
-
-function buildSection(sec){
-  const det = document.createElement('details'); det.className='section'; det.removeAttribute('open');
-  det.innerHTML = `<summary>${sec.title}</summary>`;
-  const inner = document.createElement('div'); inner.className='section-body';
-  (sec.questions||[]).forEach(q=> inner.appendChild(buildQuestion(q)));
-  det.appendChild(inner); return det;
-}
-
-function renderSections(sections){
-  const mount = document.getElementById('sections');
-  mount.innerHTML = '';
-  CURRENT_SECTIONS = sections || [];
-  sections.forEach(sec => mount.appendChild(buildSection(sec)));
-  requestAnimationFrame(()=> document.querySelectorAll('details.section').forEach(d=> d.removeAttribute('open')));
-}
-
-function gatherExportPayload(){ return { meta:{ project:$('#project').value.trim(), who:$('#who').value.trim(), when: $('#when').value || new Date().toISOString().slice(0,10) }, items: state.items }; }
-
-// JSON export (debug/manual)
-$('#exportHTML').addEventListener('click', ()=>{ const data=gatherExportPayload(); const blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}); saveAs(blob, `feedback_${Date.now()}.json`); });
-
-// --- PDF export ---
-function buildPdfReportEl(){
-  const meta = { project: $('#project').value.trim(), who: $('#who').value.trim(), when: $('#when').value || new Date().toISOString().slice(0,10) };
-  const el = document.createElement('div');
-  el.className = 'pdf-report';
-  el.style.cssText = 'width:800px; padding:24px; background:#fff; color:#111; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;';
-  el.innerHTML = `
-    <header style="border-bottom:1px solid #e5e7eb; margin-bottom:12px; padding-bottom:8px;">
-      <h1 style="margin:0 0 6px; font:700 22px/1.2 system-ui;">Field Survey Report</h1>
-      <div style="display:flex; gap:16px; flex-wrap:wrap; color:#333; font:14px/1.4 system-ui;">
-        <div><strong>Project #:</strong> ${escapeHTML(meta.project)}</div>
-        <div><strong>Date:</strong> ${escapeHTML(meta.when)}</div>
-        <div><strong>Surveyor:</strong> ${escapeHTML(meta.who)}</div>
-      </div>
-    </header>`;
-
-  CURRENT_SECTIONS.forEach(sec => {
-    const secBlock = document.createElement('section');
-    secBlock.style.cssText = 'margin-top:10px; padding-top:8px;';
-    const h2 = document.createElement('h2');
-    h2.textContent = sec.title;
-    h2.style.cssText = 'font:600 18px/1.3 system-ui; margin:0 0 6px;';
-    secBlock.appendChild(h2);
-
-    (sec.questions||[]).forEach(q => {
-      const it = state.items[q.id] || { rating:0, comment:'', photos:[] };
-      const qdiv = document.createElement('div');
-      qdiv.style.cssText = 'border:1px solid #e5e7eb; border-radius:10px; padding:10px; margin:8px 0; page-break-inside: avoid;';
-      qdiv.innerHTML = `
-        <div style=\"font:600 15px/1.3 system-ui; margin:0 0 4px;\">${escapeHTML(q.text)}</div>
-        <div style=\"font:14px system-ui; color:#444; margin:0 0 6px;\">Rating: ${'★'.repeat(it.rating||0)}${'☆'.repeat(5-(it.rating||0))}</div>
-        ${it.comment ? `<div style=\"white-space:pre-wrap; font:14px/1.5 system-ui; color:#222; margin:0 0 8px;\">${escapeHTML(it.comment)}</div>` : ''}
-      `;
-      if (it.photos && it.photos.length){
-        const grid = document.createElement('div');
-        grid.style.cssText = 'display:grid; grid-template-columns: repeat(2, 1fr); gap:8px;';
-        it.photos.forEach(p => { const img=document.createElement('img'); img.src=p.dataUrl; img.alt='photo'; img.style.cssText='width:100%; height:170px; object-fit:cover; border:1px solid #ddd; border-radius:8px;'; grid.appendChild(img); });
-        qdiv.appendChild(grid);
+    // Sections
+    const sections = document.querySelectorAll('#sections details.section');
+    sections.forEach(sec => {
+      const title = sec.querySelector('summary')?.textContent?.trim() || '';
+      if (title) {
+        const h2 = document.createElement('h2');
+        h2.textContent = title;
+        h2.style.cssText = 'font:600 16px/1.3 system-ui; margin:8px 0 6px;';
+        root.appendChild(h2);
       }
-      secBlock.appendChild(qdiv);
+
+      // Questions
+      const qs = sec.querySelectorAll('.q');
+      qs.forEach(q => {
+        const qid = q.dataset.id || '';
+        const qtext = q.querySelector('h2, h3')?.textContent?.trim() || '';
+
+        // Pull user inputs from state if available (fallback to DOM)
+        const it = (window.state && window.state.items && window.state.items[qid]) || {};
+        const rating = Number(it.rating || 0);
+        const comment = (it.comment ?? q.querySelector('textarea')?.value ?? '').trim();
+        const photos = Array.isArray(it.photos) ? it.photos : [];
+
+        const qdiv = document.createElement('div');
+        qdiv.style.cssText = 'border:1px solid #e5e7eb; border-radius:10px; padding:10px; margin:8px 0; page-break-inside: avoid;';
+        qdiv.innerHTML = `
+          <div style="font:600 14px/1.3 system-ui; margin:0 0 6px;">${escapeHTML(qtext)}</div>
+          <div style="font:14px/1.4 system-ui; color:#333; margin:0 6px 6px 0;"><strong>Rating:</strong> ${rating ? `${rating}/5` : '—'}</div>
+          <div style="font:14px/1.4 system-ui; color:#333; margin:0 6px 8px 0;"><strong>Comments:</strong> ${comment ? escapeHTML(comment) : '—'}</div>
+        `;
+
+        // Photos: always include a section; show grid or "(none)"
+        if (photos.length) {
+          const grid = document.createElement('div');
+          grid.style.cssText = 'display:grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap:8px;';
+          photos.forEach(p => {
+            const img = document.createElement('img');
+            img.src = p.dataUrl;
+            img.alt = 'photo';
+            img.style.cssText = 'width:100%; height:170px; object-fit:cover; border:1px solid #ddd; border-radius:8px;';
+            grid.appendChild(img);
+          });
+          qdiv.appendChild(grid);
+        } else {
+          const none = document.createElement('div');
+          none.textContent = 'Photos: (none)';
+          none.style.cssText = 'font:14px/1.4 system-ui; color:#333;';
+          qdiv.appendChild(none);
+        }
+
+        root.appendChild(qdiv);
+      });
     });
-    el.appendChild(secBlock);
-  });
-  return el;
-}
 
-function exportPDF(){
-  const el = buildPdfReportEl();
-  document.body.appendChild(el);
-  const file = `survey_${($('#project').value.trim()||'project')}_${($('#when').value||new Date().toISOString().slice(0,10))}.pdf`.replace(/\s+/g,'_');
-  const opt = { margin: 0.5, filename: file, image: { type: 'jpeg', quality: 0.95 }, html2canvas: { scale: 2, useCORS: true }, jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' } };
-  html2pdf().set(opt).from(el).save().then(()=> el.remove()).catch(()=> el.remove());
-}
+    return root;
+  }
 
-$('#exportPDF').addEventListener('click', exportPDF);
+  function exportPDF() {
+    const el = buildSimplifiedPdfEl();
+    document.body.appendChild(el);
 
-// ------- EXCEL LOADING (autoload only)
-async function parseWorkbook(ab){
-  const wb = XLSX.read(ab, { type: 'array' });
-  const sheetName = wb.SheetNames.find(n => n.toLowerCase() === 'questions') || wb.SheetNames[0];
-  const rows = XLSX.utils.sheet_to_json(wb.Sheets[sheetName], { defval: '' });
-  if (!rows.length) { renderSections([]); return; }
-  const groups = new Map();
-  rows.forEach((r,i) => {
-    const section = String(r.Section || 'Untitled').trim();
-    const sorder = Number(r.SectionOrder || 0) || 0;
-    const id = String(r.QuestionID || `q_${i+1}`).trim();
-    const text = String(r.QuestionText || '').trim();
-    const qorder = Number(r.QOrder || 0) || 0;
-    const refA = [r.RefA1, r.RefA2].map(v => String(v||'').trim()).filter(Boolean);
-    const refB = [r.RefB1, r.RefB2].map(v => String(v||'').trim()).filter(Boolean);
-    if(!groups.has(section)) groups.set(section, { title: section, order: sorder, questions: [] });
-    groups.get(section).questions.push({ id, text, order: qorder, refA, refB });
-  });
-  const sections = Array.from(groups.values())
-    .sort((a,b)=>a.order-b.order)
-    .map(sec => ({ title: sec.title, questions: sec.questions.sort((a,b)=>a.order-b.order).map(q => ({ id:q.id, text:q.text, refA:q.refA, refB:q.refB })) }));
-  renderSections(sections);
-}
+    const proj = (document.querySelector('#meta #project')?.value || 'project').trim().replace(/\s+/g,'_');
+    const when = document.querySelector('#meta #when')?.value || new Date().toISOString().slice(0,10);
+    const filename = `survey_${proj}_${when}.pdf`;
 
-async function loadExcelFromUrl(url){
-  const res = await fetch(new URL(url, document.baseURI), { cache: 'no-store' });
-  if(!res.ok) throw new Error(`Failed to fetch Excel at ${url}`);
-  const ab = await res.arrayBuffer();
-  await parseWorkbook(ab);
-}
+    const opt = {
+      margin: 0.5,
+      filename,
+      image: { type: 'jpeg', quality: 0.95 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'in', format: 'letter', orientation: 'portrait' }
+    };
 
-// Auto-load from fixed path on startup
-loadExcelFromUrl(FIXED_XLSX_PATH).catch(err => console.warn('Auto-load failed:', err));
+    html2pdf().set(opt).from(el).save()
+      .then(() => el.remove())
+      .catch(() => el.remove());
+  }
 
-// Meta events
-$('#project').addEventListener('input', ()=>{ state.project=$('#project').value; markDirty(); });
-$('#who').addEventListener('input', ()=>{ state.who=$('#who').value; markDirty(); });
-$('#when').addEventListener('change', ()=>{ state.when=$('#when').value; markDirty(); });
+  document.getElementById('exportPDF')?.addEventListener('click', exportPDF);
 </script>
-</body>
-</html>
