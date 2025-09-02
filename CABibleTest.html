@@ -14,6 +14,7 @@
 
     .container { padding: 16px; }
     .card { background: var(--card); border: 1px solid #1b1f2a; border-radius: var(--radius); padding: 14px; box-shadow: 0 10px 25px rgba(0,0,0,.25); }
+    .hidden { display: none !important; }
 
     /* Meta row tidy styles */
     #meta { padding: 10px 12px; }
@@ -52,13 +53,20 @@
     summary { list-style: none; cursor: pointer; padding: 10px 12px; background: #0f121a; font-weight: 600; }
     summary::-webkit-details-marker { display: none; }
 
+    /* Thumbs grid */
     .thumbs { display:grid; grid-template-columns: repeat(auto-fill, minmax(110px,1fr)); gap:8px; padding: 10px; }
     .thumb { position: relative; border-radius: 10px; overflow: hidden; border: 1px solid #2a3045; }
     .thumb img { display:block; width: 100%; height: 100px; object-fit: cover; }
 
+    /* Controls */
     .controls { position: sticky; bottom: 0; z-index: 2; background: linear-gradient(0deg, rgba(11,12,15,.98), rgba(11,12,15,.88)); padding: 10px 16px; border-top: 1px solid #1b1f2a; display:flex; flex-wrap: wrap; gap: 8px; }
     .btn { appearance:none; border: 1px solid #2a75ff55; background: #1a2540; color:#e8f0ff; padding: 10px 14px; border-radius: 12px; cursor: pointer; font-weight: 600; }
     .btn.secondary { background: #111522; border-color: #26314d; color: #d7dceb; }
+
+    /* Chevrons for inner reference image dropdowns */
+    details.collapsible > summary { display:flex; align-items:center; justify-content:space-between; }
+    details.collapsible > summary .chev { font-size:14px; opacity:.8; transition:transform .15s ease; }
+    details.collapsible[open] > summary .chev { transform: rotate(180deg); }
   </style>
 </head>
 <body>
@@ -123,12 +131,12 @@
       <h2>${q.text}</h2>
 
       <!-- References FIRST -->
-      <details>
-        <summary>Reference images (A)</summary>
+      <details class="collapsible ref">
+        <summary><span>Reference images (A)</span><span class="chev" aria-hidden="true">▾</span></summary>
         <div class="thumbs" data-role="refA">${(q.refA||[]).map(src=>thumbHTML(src)).join('')}</div>
       </details>
-      <details>
-        <summary>Reference images (B)</summary>
+      <details class="collapsible ref">
+        <summary><span>Reference images (B)</span><span class="chev" aria-hidden="true">▾</span></summary>
         <div class="thumbs" data-role="refB">${(q.refB||[]).map(src=>thumbHTML(src)).join('')}</div>
       </details>
 
@@ -210,7 +218,7 @@
     det.innerHTML = `<summary><span class="summary-text">${sec.title}</span><span class="chev" aria-hidden="true">▾</span></summary>`;
     const inner = document.createElement('div'); 
     inner.className='section-body';
-    (sec.questions||list).forEach ? sec.questions.forEach(q=> inner.appendChild(buildQuestion(q))) : null;
+    (sec.questions || []).forEach(q=> inner.appendChild(buildQuestion(q)));
     det.appendChild(inner); 
     return det;
   }
