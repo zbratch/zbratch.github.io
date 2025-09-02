@@ -7,7 +7,7 @@
   <style>
     :root { --gap:14px; --radius:14px; --bg:#0b0c0f; --card:#12141a; --muted:#8b93a6; --text:#e9ecf1; }
     html, body { height:100%; }
-    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:var(--bg); color:var(--text); }
+    body { margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; background:var(--bg); color: var(--text); }
     header { position: sticky; top:0; z-index: 2; background: linear-gradient(180deg, rgba(11,12,15,.95), rgba(11,12,15,.75)); backdrop-filter: blur(6px); border-bottom: 1px solid #1b1f2a; }
     header .wrap { display:flex; align-items:center; gap: var(--gap); padding: 12px 16px; }
     h1 { font-size: 18px; margin: 0; letter-spacing: .2px; }
@@ -300,7 +300,7 @@
   loadExcelFromUrl(FIXED_XLSX_PATH).catch(err => console.warn('Auto-load failed:', err));
 </script>
 
-<!-- ====== Print-safe helpers + PDF Export (ASCII-only; always prints all fields) ====== -->
+<!-- ====== Print-safe helpers + PDF Export (ASCII-only; section page breaks) ====== -->
 <script>
 (function(){
   // Collapse all <details>, return restore() to put them back
@@ -364,8 +364,12 @@
     });
     return arr;
   }
+
+  // Build a clean report with a hard page break before each new section
   function buildSimplifiedPdfEl(){
     var root = el("div", "width:800px; padding:24px; background:#fff; color:#111; font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;");
+
+    // Header
     var metaWrap = el("header", "border-bottom:1px solid #e5e7eb; margin-bottom:12px; padding-bottom:8px;");
     var h1 = el("h1", "margin:0 0 6px; font:700 20px/1.2 system-ui;"); h1.textContent = "Survey Responses";
     metaWrap.appendChild(h1);
@@ -379,15 +383,25 @@
     metaWrap.appendChild(row);
     root.appendChild(metaWrap);
 
+    // Sections (page break between sections)
     var sections = document.querySelectorAll("#sections details.section, details.section");
-    sections.forEach(function(sec){
+    sections.forEach(function(sec, idx){
+      if (idx > 0) {
+        var br = el("div"); br.className = "html2pdf__page-break";
+        br.style.cssText = "page-break-before:always; break-before:page;";
+        root.appendChild(br);
+      }
+
+      var secWrap = el("section", "margin-top:8px;");
+
       var sum = sec.querySelector("summary");
       var title = sum ? (sum.textContent || "").trim() : "";
       if (title){
-        var h2 = el("h2", "font:600 16px/1.3 system-ui; margin:8px 0 6px;");
+        var h2 = el("h2", "font:600 16px/1.3 system-ui; margin:0 0 6px;");
         h2.textContent = title;
-        root.appendChild(h2);
+        secWrap.appendChild(h2);
       }
+
       var qs = sec.querySelectorAll(".q");
       qs.forEach(function(q){
         var qid = q.dataset ? (q.dataset.id || "") : "";
@@ -429,12 +443,16 @@
           none.textContent = "Photos: (none)";
           card.appendChild(none);
         }
-        root.appendChild(card);
+
+        secWrap.appendChild(card);
       });
+
+      root.appendChild(secWrap);
     });
 
     return root;
   }
+
   function exportPDF(){
     // Collapse all details + enter "printing" mode to avoid any offsets
     var restore = snapshotAndCollapseDetails();
@@ -453,7 +471,8 @@
       filename: filename,
       image: { type: "jpeg", quality: 0.95 },
       html2canvas: { scale: 2, useCORS: true },
-      jsPDF: { unit: "in", format: "letter", orientation: "portrait" }
+      jsPDF: { unit: "in", format: "letter", orientation: "portrait" },
+      pagebreak: { mode: ["css", "legacy"] }   // ensure our hard breaks are obeyed
     };
 
     function cleanup(){
@@ -464,6 +483,7 @@
 
     html2pdf().set(opt).from(el).save().then(cleanup).catch(cleanup);
   }
+
   var btn = document.getElementById("exportPDF");
   if (btn) btn.addEventListener("click", exportPDF);
 })();
