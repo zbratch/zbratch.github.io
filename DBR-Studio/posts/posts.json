@@ -1,0 +1,41 @@
+[
+  {
+    "title": "Welcome to DBR Studio",
+    "date": "2025-09-08",
+    "summary": "Kickoff for our Music, Photography, and Art club. Share playlists, pics, and your own creations!",
+    "tags": [
+      "announcement"
+    ]
+  },
+  {
+    "title": "Boat Playlist",
+    "date": "2025-09-08",
+    "summary": "Community-sourced playlist: songs for life on the water.",
+    "tags": [
+      "music",
+      "playlist"
+    ],
+    "embed": "<iframe width=\"560\" height=\"315\" src=\"https://www.youtube.com/embed/videoseries?list=RDZfr3L0drhS8\" title=\"YouTube playlist\" frameborder=\"0\" allowfullscreen></iframe>"
+  },
+  {
+    "title": "Pic of the Day",
+    "date": "2025-09-07",
+    "summary": "Share your best shot today\u2014landscapes, candids, or abstract.",
+    "tags": [
+      "photography"
+    ],
+    "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+    "caption": "Sample Unsplash placeholder image."
+  },
+  {
+    "title": "Best version of 'Burning Down the House'",
+    "date": "2025-09-06",
+    "summary": "Cast a local vote (device-only) and discuss in GitHub Discussions!",
+    "tags": [
+      "music",
+      "poll"
+    ],
+    "link": "https://github.com/",
+    "embed": ""
+  }
+]
