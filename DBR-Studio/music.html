@@ -5,14 +5,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>DBR Studio — Music</title>
   <link rel="stylesheet" href="./assets/styles.css"/>
-  <script defer src="./assets/script.js"></script>
 </head>
 <body>
   <nav>
     <div class="nav-inner">
       <a class="brand" href="./"><span class="logo"></span> DBR Studio</a>
       <div class="links">
-        <a class="active" href="./music.html">Music</a>
+        <a href="./music.html" class="active">Music</a>
         <a href="./photography.html">Photography</a>
         <a href="./art.html">Art</a>
         <a href="./CONTRIBUTING.html">Contribute</a>
@@ -22,34 +21,50 @@
 
   <header class="hero container">
     <h1>DBR Music</h1>
-    <p>Playlists, posts, and polls from the club.</p>
+    <p>Playlists, blog posts, polls, and space for DBR musicians to share.</p>
   </header>
 
   <main class="container">
-    <section>
-      <h2 class="section-title">Featured Playlists</h2>
-      <div id="music-playlists"></div>
-    </section>
-
-    <section>
-      <h2 class="section-title">Music Blog</h2>
-      <div id="music-posts"></div>
-    </section>
-
-    <section>
-      <h2 class="section-title">Music Polls</h2>
-      <div id="music-polls"></div>
-    </section>
+    <h2 class="section-title">All Music Posts</h2>
+    <div id="music"></div>
   </main>
 
-  <footer class="footer">© 2025 DBR Studio</footer>
+  <footer class="footer">© 2025 DBR Studio — Built for GitHub Pages</footer>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      loadPosts('#music-playlists', { filterTag: 'playlist', layout: 'grid', limit: 8 });
-      loadPosts('#music-posts',     { filterTag: 'music',    layout: 'list', limit: 20 });
-      loadPosts('#music-polls',     { filterTag: 'poll',     layout: 'list', limit: 6  });
-    });
+    async function getPosts() {
+      const res = await fetch('./posts/posts.json?_=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load posts.json: ' + res.status);
+      return res.json();
+    }
+    function fmtDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return isNaN(d) ? iso : d.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+    }
+    function escapeHTML(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function renderPost(p){
+      const title = escapeHTML(p.title||'Untitled');
+      const summary = p.summary?`<p class="summary">${escapeHTML(p.summary)}</p>`:'';
+      let imagesHTML='';
+      if(Array.isArray(p.images)&&p.images.length){
+        imagesHTML=`<div class="images">${p.images.map(u=>`<img src="${u}" alt="${title}" loading="lazy">`).join('')}</div>`;
+      }else if(p.image){imagesHTML=`<div class="images"><img src="${p.image}" alt="${title}"></div>`;}
+      const embedHTML=p.embed?`<div class="embed">${p.embed}</div>`:(p.link?`<p class="ext"><a href="${p.link}" target="_blank" rel="noopener">Open link →</a></p>`:'');
+      const dateStr=fmtDate(p.date||'');
+      const who=p.caption?p.caption.replace(/^Submitted by\s*/i,'').trim():'';
+      const captionLine=(who||dateStr)?`<p class="meta">Submitted by ${who||'Anonymous'}${dateStr?' on '+dateStr:''}</p>`:'';
+      return `<article class="card post"><div class="content"><h3>${title}</h3>${summary}${imagesHTML}${embedHTML}${captionLine}</div></article>`;
+    }
+    async function boot(){
+      const el=document.getElementById('music');
+      try{
+        const posts=await getPosts();
+        const filtered=posts.filter(p=>Array.isArray(p.tags)&&p.tags.includes('music'));
+        el.innerHTML=filtered.length?filtered.map(renderPost).join(''):`<p class="muted">No music posts yet.</p>`;
+      }catch(e){console.error(e);el.innerHTML='<div class="error">Could not load posts.</div>';}
+    }
+    document.addEventListener('DOMContentLoaded',boot);
   </script>
 </body>
 </html>

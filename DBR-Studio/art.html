@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>DBR Studio — Art</title>
   <link rel="stylesheet" href="./assets/styles.css"/>
-  <script defer src="./assets/script.js"></script>
 </head>
 <body>
   <nav>
@@ -14,7 +13,7 @@
       <div class="links">
         <a href="./music.html">Music</a>
         <a href="./photography.html">Photography</a>
-        <a class="active" href="./art.html">Art</a>
+        <a href="./art.html" class="active">Art</a>
         <a href="./CONTRIBUTING.html">Contribute</a>
       </div>
     </div>
@@ -22,14 +21,23 @@
 
   <header class="hero container">
     <h1>DBR Art</h1>
-    <p>Featured pieces and the latest from DBR artists.</p>
+    <p>Post your creations and browse what others are making.</p>
   </header>
 
   <main class="container">
-    <section>
-      <h2 class="section-title">Featured</h2>
-      <div id="art-featured"></div>
-    </section>
+    <h2 class="section-title">All Art Posts</h2>
+    <div id="art"></div>
+  </main>
 
-    <section>
-      <h2 class="section-title">Art Gallery</h
+  <footer class="footer">© 2025 DBR Studio — Built for GitHub Pages</footer>
+
+  <script>
+    async function getPosts(){const r=await fetch('./posts/posts.json?_='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(r.status);return r.json();}
+    function fmtDate(i){if(!i)return'';const d=new Date(i);return isNaN(d)?i:d.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});}
+    function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function render(p){const t=esc(p.title||'Untitled');const s=p.summary?`<p>${esc(p.summary)}</p>`:'';let imgs='';if(Array.isArray(p.images)&&p.images.length){imgs=`<div class="images">${p.images.map(u=>`<img src="${u}" alt="${t}" loading="lazy">`).join('')}</div>`;}else if(p.image){imgs=`<div class="images"><img src="${p.image}" alt="${t}"></div>`;}const emb=p.embed?`<div class="embed">${p.embed}</div>`:(p.link?`<p><a href="${p.link}" target="_blank">Open link →</a></p>`:'');const d=fmtDate(p.date||'');const who=p.caption?p.caption.replace(/^Submitted by\s*/i,'').trim():'';const cap=(who||d)?`<p class="meta">Submitted by ${who||'Anonymous'}${d?' on '+d:''}</p>`:'';return `<article class="card post"><div class="content"><h3>${t}</h3>${s}${imgs}${emb}${cap}</div></article>`;}
+    async function boot(){const el=document.getElementById('art');try{const ps=await getPosts();const f=ps.filter(p=>Array.isArray(p.tags)&&p.tags.includes('art'));el.innerHTML=f.length?f.map(render).join(''):`<p class="muted">No art posts yet.</p>`;}catch(e){console.error(e);el.innerHTML='<div class="error">Could not load posts.</div>';}}
+    document.addEventListener('DOMContentLoaded',boot);
+  </script>
+</body>
+</html>

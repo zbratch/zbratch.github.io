@@ -196,17 +196,34 @@ def main():
 
         print(f"+ Row {i}: " + " | ".join(parts))
 
-        posts.append(post)
-        published += 1
+            # Keep the computed sort key alongside the post
+    # Use date → ISO; fallback "" becomes very old.
+    posts.append({
+        "_date": post.get("date", ""),  # ISO yyyy-mm-dd or ""
+        "_row": i,                      # original row number for stable tie-break
+        "post": post
+    })
+    published += 1
 
-    posts.sort(key=lambda p: p.get("date", ""), reverse=True)
+# Sort: newest first by date; if equal/missing, keep original TSV order
+def sort_key(item):
+    d = item["_date"]
+    # Convert to tuple for proper ordering: missing dates sort last
+    return (d != "", d)  # True/False (so True > False), then ISO string
+    posts.sort(key=lambda it: (it["_date"] == "", it["_date"], it["_row"]))  # oldest first
+    posts.reverse()  # now newest first, preserving stable order among equals
+
+    # Strip helpers back out
+    final_posts = [it["post"] for it in posts]
 
     os.makedirs(os.path.dirname(OUT_FILE), exist_ok=True)
     with open(OUT_FILE, "w", encoding="utf-8") as f:
-        json.dump(posts, f, indent=2)
+        json.dump(final_posts, f, indent=2)
+
     print("----")
-    print(f"Wrote {len(posts)} posts → {OUT_FILE}")
+    print(f"Wrote {len(final_posts)} posts → {OUT_FILE}")
     print(f"Published: {published} | Skipped: {skipped}")
+
     return 0
 
 if __name__ == "__main__":

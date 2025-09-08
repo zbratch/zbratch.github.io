@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>DBR Studio — Photography</title>
   <link rel="stylesheet" href="./assets/styles.css"/>
-  <script defer src="./assets/script.js"></script>
 </head>
 <body>
   <nav>
@@ -13,7 +12,7 @@
       <a class="brand" href="./"><span class="logo"></span> DBR Studio</a>
       <div class="links">
         <a href="./music.html">Music</a>
-        <a class="active" href="./photography.html">Photography</a>
+        <a href="./photography.html" class="active">Photography</a>
         <a href="./art.html">Art</a>
         <a href="./CONTRIBUTING.html">Contribute</a>
       </div>
@@ -22,34 +21,23 @@
 
   <header class="hero container">
     <h1>DBR Photography</h1>
-    <p>Pic of the Day, favorites, and the photo stream.</p>
+    <p>Pic of the Day, community favorites, and photo blog posts.</p>
   </header>
 
   <main class="container">
-    <section>
-      <h2 class="section-title">Pic of the Day</h2>
-      <div id="pod"></div>
-    </section>
-
-    <section>
-      <h2 class="section-title">Favorites</h2>
-      <div id="photo-favs" class="grid"></div>
-    </section>
-
-    <section>
-      <h2 class="section-title">Photo Stream</h2>
-      <div id="photo-posts"></div>
-    </section>
+    <h2 class="section-title">All Photography Posts</h2>
+    <div id="photography"></div>
   </main>
 
-  <footer class="footer">© 2025 DBR Studio</footer>
+  <footer class="footer">© 2025 DBR Studio — Built for GitHub Pages</footer>
 
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      loadPosts('#pod',         { filterTag: 'photography', layout: 'list', limit: 1  });
-      loadPosts('#photo-favs',  { filterTag: 'favorite-photo', layout: 'grid', limit: 12 });
-      loadPosts('#photo-posts', { filterTag: 'photography', layout: 'grid', limit: 30 });
-    });
+    async function getPosts(){const r=await fetch('./posts/posts.json?_='+Date.now(),{cache:'no-store'});if(!r.ok)throw new Error(r.status);return r.json();}
+    function fmtDate(i){if(!i)return'';const d=new Date(i);return isNaN(d)?i:d.toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});}
+    function esc(s=''){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));}
+    function render(p){const t=esc(p.title||'Untitled');const s=p.summary?`<p>${esc(p.summary)}</p>`:'';let imgs='';if(Array.isArray(p.images)&&p.images.length){imgs=`<div class="images">${p.images.map(u=>`<img src="${u}" alt="${t}" loading="lazy">`).join('')}</div>`;}else if(p.image){imgs=`<div class="images"><img src="${p.image}" alt="${t}"></div>`;}const emb=p.embed?`<div class="embed">${p.embed}</div>`:(p.link?`<p><a href="${p.link}" target="_blank">Open link →</a></p>`:'');const d=fmtDate(p.date||'');const who=p.caption?p.caption.replace(/^Submitted by\s*/i,'').trim():'';const cap=(who||d)?`<p class="meta">Submitted by ${who||'Anonymous'}${d?' on '+d:''}</p>`:'';return `<article class="card post"><div class="content"><h3>${t}</h3>${s}${imgs}${emb}${cap}</div></article>`;}
+    async function boot(){const el=document.getElementById('photography');try{const ps=await getPosts();const f=ps.filter(p=>Array.isArray(p.tags)&&p.tags.includes('photography'));el.innerHTML=f.length?f.map(render).join(''):`<p class="muted">No photos yet.</p>`;}catch(e){console.error(e);el.innerHTML='<div class="error">Could not load posts.</div>';}}
+    document.addEventListener('DOMContentLoaded',boot);
   </script>
 </body>
 </html>
