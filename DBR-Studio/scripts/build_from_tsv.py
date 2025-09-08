@@ -185,8 +185,31 @@ def main():
             post["embed"] = embed_info["embed"]
         elif embed_info["linkOut"]:
             post["link"] = embed_info["linkOut"]
-        if nick:
-            post["caption"] = f"Submitted by {nick}"
+        # Build author display (fallbacks)
+        email = (row.get("Email", "") or "").strip()
+        author = nick or (row.get("Name", "") or "").strip()
+        if not author and email:
+            author = email.split("@", 1)[0]
+        if not author:
+            author = "Anonymous"
+
+        # Caption: always "Submitted by X"
+        post["caption"] = f"Submitted by {author}"
+
+        # Optional byline: "Submitted by X on Month D, YYYY" if date exists
+        if date:
+            try:
+                from datetime import datetime
+                d = datetime.fromisoformat(date)
+                nice = d.strftime("%B %-d, %Y")  # Linux/macOS
+            except Exception:
+                try:
+                    nice = datetime.strptime(date, "%Y-%m-%d").strftime("%B %d, %Y")
+                except Exception:
+                    nice = date
+            # Windows strftime doesn't support %-d; strip any leading zero manually
+            nice = nice.replace(" 0", " ")
+            post["byline"] = f"Submitted by {author} on {nice}"
 
         # Feedback
         parts = []
