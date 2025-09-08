@@ -12,7 +12,7 @@ APPROVED_ONLY = True  # Only include rows with Status == Approved
 # Where images live in the repo on disk:
 REPO_PHOTOS_DIR = os.path.join(ROOT, "photos")
 # How your site references them (web path):
-REPO_WEB_BASE   = "/dbr-studio/photos"
+REPO_WEB_BASE   = "/DBR-Studio/photos"
 # Prefer /photos/{YYYY}/filename when a date is present
 PREFER_YEAR_SUBFOLDER = False
 # ====================================
