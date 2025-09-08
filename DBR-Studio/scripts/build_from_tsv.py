@@ -132,16 +132,22 @@ def main():
         print(f"[ERROR] Missing TSV: {DATA_FILE}")
         return 1
 
+    import csv
     with open(DATA_FILE, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f, delimiter="\t")
         rows = list(reader)
 
-    posts = []
-    published, skipped = 0, 0
+    APPROVED_VALUES = {"approved", "accept", "accepted", "yes", "ok", "publish", "published", "ready"}
 
-    for i, row in enumerate(rows, start=2):  # header = line 1
+    items = []      # will hold (row_index, iso_date, post_dict)
+    published = 0
+    skipped = 0
+
+    for i, row in enumerate(rows, start=2):  # header is line 1
         status = (row.get("Status", "") or "").strip().lower()
-        if APPROVED_ONLY and status != "approved":
+
+        is_publish = (status in APPROVED_VALUES) or (not APPROVED_ONLY and status != "rejected")
+        if not is_publish:
             print(f"- Row {i}: SKIP (Status={status or 'blank'}) — title=\"{row.get('Post Title','')}\"")
             skipped += 1
             continue
@@ -162,25 +168,25 @@ def main():
 
         embed_info = build_embed(link)
 
-        # handle images: split, rewrite to repo paths when possible
+        # Images: split then rewrite to repo paths if found
         raw_images = split_multi(files)
         rewritten_images, img_warnings = rewrite_images(raw_images, date)
 
         post = {}
-        if title: post["title"] = title
-        if date: post["date"] = date
+        if title:   post["title"] = title
+        if date:    post["date"] = date
         if summary: post["summary"] = summary
-        if tags: post["tags"] = tags
-
-        if len(rewritten_images) > 1: post["images"] = rewritten_images
-        elif len(rewritten_images) == 1: post["image"] = rewritten_images[0]
-
+        if tags:    post["tags"] = tags
+        if len(rewritten_images) > 1:
+            post["images"] = rewritten_images
+        elif len(rewritten_images) == 1:
+            post["image"] = rewritten_images[0]
         if embed_info["embed"]:
             post["embed"] = embed_info["embed"]
         elif embed_info["linkOut"]:
             post["link"] = embed_info["linkOut"]
-
-        if nick: post["caption"] = f"Submitted by {nick}"
+        if nick:
+            post["caption"] = f"Submitted by {nick}"
 
         # Feedback
         parts = []
@@ -196,14 +202,25 @@ def main():
 
         print(f"+ Row {i}: " + " | ".join(parts))
 
-            # Keep the computed sort key alongside the post
-    # Use date → ISO; fallback "" becomes very old.
-    posts.append({
-        "_date": post.get("date", ""),  # ISO yyyy-mm-dd or ""
-        "_row": i,                      # original row number for stable tie-break
-        "post": post
-    })
-    published += 1
+        items.append((i, post.get("date", ""), post))  # only append when we HAVE a post
+        published += 1
+
+    # Sort: newest first; undated at the bottom; stable on original row order
+    # Key: (undated?, date_iso, row_index); we sort ascending, then reverse
+    items.sort(key=lambda t: (t[1] == "", t[1], t[0]))
+    items.reverse()
+
+    final_posts = [p for (_i, _d, p) in items]
+
+    os.makedirs(os.path.dirname(OUT_FILE), exist_ok=True)
+    with open(OUT_FILE, "w", encoding="utf-8") as f:
+        json.dump(final_posts, f, indent=2)
+
+    print("----")
+    print(f"Wrote {len(final_posts)} posts → {OUT_FILE}")
+    print(f"Published: {published} | Skipped: {skipped}")
+    return 0
+
 
 # Sort: newest first by date; if equal/missing, keep original TSV order
 def sort_key(item):
