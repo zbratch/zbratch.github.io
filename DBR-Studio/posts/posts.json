@@ -27,6 +27,17 @@
     "image": "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
     "caption": "Sample Unsplash placeholder image."
   },
+  {
+    "title": "Best version of 'Burning Down the House'",
+    "date": "2025-09-06",
+    "summary": "Cast a local vote (device-only) and discuss in GitHub Discussions!",
+    "tags": [
+      "music",
+      "poll"
+    ],
+    "link": "https://github.com/",
+    "embed": ""
+  },
   {"title": "New car!! 😎", 
   "date": "2025-09-08", 
   "summary": "I won the opportunity back in November of 2024 to spend $65k on a brand new limited edition 2025 Mustang GT", 

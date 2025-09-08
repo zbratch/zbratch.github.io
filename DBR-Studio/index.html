@@ -32,7 +32,7 @@
 
   <main class="container">
     <h2 class="section-title">Latest from the Club</h2>
-    <div data-load="latest"></div>
+    <div id="latest"></div>
 
     <h2 class="section-title">Sections</h2>
     <div class="grid">
@@ -57,8 +57,13 @@
     </div>
   </main>
 
-  <footer class="footer">
-    © 2025 DBR Studio — Built for GitHub Pages
-  </footer>
+  <footer class="footer">© 2025 DBR Studio — Built for GitHub Pages</footer>
+
+  <script>
+    // Latest across everything
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPosts('#latest', { layout: 'list', limit: 12 });
+    });
+  </script>
 </body>
 </html>

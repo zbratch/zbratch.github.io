@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>DBR Photography — DBR Studio</title>
+  <title>DBR Studio — Photography</title>
   <link rel="stylesheet" href="./assets/styles.css"/>
   <script defer src="./assets/script.js"></script>
 </head>
@@ -13,16 +13,19 @@
       <a class="brand" href="./"><span class="logo"></span> DBR Studio</a>
       <div class="links">
         <a href="./music.html">Music</a>
-        <a href="./photography.html">Photography</a>
+        <a class="active" href="./photography.html">Photography</a>
         <a href="./art.html">Art</a>
         <a href="./CONTRIBUTING.html">Contribute</a>
       </div>
     </div>
   </nav>
-  <main class="container">
-    <h1>DBR Photography</h1>
-    <p class="small">Pic of the Day • Favorites • Photo Blog</p>
 
+  <header class="hero container">
+    <h1>DBR Photography</h1>
+    <p>Pic of the Day, favorites, and the photo stream.</p>
+  </header>
+
+  <main class="container">
     <section>
       <h2 class="section-title">Pic of the Day</h2>
       <div id="pod"></div>
@@ -30,19 +33,23 @@
 
     <section>
       <h2 class="section-title">Favorites</h2>
-      <p class="small">Curate outstanding photos submitted by the community.</p>
-      <div id="photo-favs"></div>
+      <div id="photo-favs" class="grid"></div>
     </section>
 
     <section>
-      <h2 class="section-title">Photo Blog</h2>
+      <h2 class="section-title">Photo Stream</h2>
       <div id="photo-posts"></div>
     </section>
   </main>
+
+  <footer class="footer">© 2025 DBR Studio</footer>
+
   <script>
-    loadPosts('#photo-posts','photography');
-    loadPosts('#photo-favs','favorite-photo');
-    loadPosts('#pod','photography'); // You can filter differently if you tag one post/day as "pod".
+    document.addEventListener('DOMContentLoaded', () => {
+      loadPosts('#pod',         { filterTag: 'photography', layout: 'list', limit: 1  });
+      loadPosts('#photo-favs',  { filterTag: 'favorite-photo', layout: 'grid', limit: 12 });
+      loadPosts('#photo-posts', { filterTag: 'photography', layout: 'grid', limit: 30 });
+    });
   </script>
 </body>
 </html>

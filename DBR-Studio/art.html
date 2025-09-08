@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>DBR Art — DBR Studio</title>
+  <title>DBR Studio — Art</title>
   <link rel="stylesheet" href="./assets/styles.css"/>
   <script defer src="./assets/script.js"></script>
 </head>
@@ -14,30 +14,22 @@
       <div class="links">
         <a href="./music.html">Music</a>
         <a href="./photography.html">Photography</a>
-        <a href="./art.html">Art</a>
+        <a class="active" href="./art.html">Art</a>
         <a href="./CONTRIBUTING.html">Contribute</a>
       </div>
     </div>
   </nav>
-  <main class="container">
+
+  <header class="hero container">
     <h1>DBR Art</h1>
-    <p class="small">Post your art • Art Blog</p>
+    <p>Featured pieces and the latest from DBR artists.</p>
+  </header>
 
+  <main class="container">
     <section>
-      <h2 class="section-title">Post Your Art</h2>
-      <div class="card">
-        <p>Share your illustrations, paintings, 3D, or mixed media. Use a GitHub “New Issue” with the Art template and attach images/links. Maintainers can feature works here.</p>
-        <a class="btn" href="#" onclick="alert('Replace with your repo issue template link!');return false;">Post your art</a>
-      </div>
+      <h2 class="section-title">Featured</h2>
+      <div id="art-featured"></div>
     </section>
 
     <section>
-      <h2 class="section-title">Art Blog</h2>
-      <div id="art-posts"></div>
-    </section>
-  </main>
-  <script>
-    loadPosts('#art-posts','art');
-  </script>
-</body>
-</html>
+      <h2 class="section-title">Art Gallery</h
