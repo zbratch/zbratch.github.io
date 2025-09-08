@@ -1,14 +1,14 @@
 
-:root{
-  --bg:#0f1115;
-  --surface:#151821;
-  --muted:#8892a6;
-  --text:#e6e9ef;
-  --accent:#7aa2f7;
-  --accent2:#9ece6a;
-  --warn:#f7768e;
-  --card:#1c2030;
-  --card2:#1a1f2e;
+:root {
+  --bg: #ffffff;
+  --surface: #ffffff;
+  --muted: #666666;
+  --text: #222222;
+  --accent: #d62828;
+  --accent2: #f94144;
+  --warn: #f94144;
+  --card: #f9f9f9;
+  --card2: #f4f4f4;
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif}
