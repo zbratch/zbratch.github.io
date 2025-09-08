@@ -1,15 +1,17 @@
-// dbr-studio/scripts/build-from-delimited.js
-// Build posts/posts.json from data/submissions.(tsv|csv) with auto delimiter detection.
+// Build posts/posts.json from data/submissions.(tsv|csv)
+// Matches headers exactly as provided (case-insensitive), incl. "Post Caption/Summary" and "Upload Files!".
 
 const fs = require('fs');
 const path = require('path');
 
-const ROOT      = path.join(__dirname, '..');
-const DATA_DIR  = path.join(ROOT, 'data');
+// ====== CONFIG ======
+const ROOT = path.join(__dirname, '..');
+const DATA_DIR = path.join(ROOT, 'data');
 const FILE_CANDIDATES = ['submissions.tsv', 'submissions.csv']; // try TSV first
-const OUT_FILE  = path.join(ROOT, 'posts', 'posts.json');
+const OUT_FILE = path.join(ROOT, 'posts', 'posts.json');
+const APPROVED_ONLY = true; // set false to include Pending for testing
+// ====================
 
-// ---- helpers ----
 function readFirstExisting(baseDir, names) {
   for (const n of names) {
     const p = path.join(baseDir, n);
@@ -27,14 +29,14 @@ function parseDelimited(text) {
 }
 
 function parseWithDelimiter(text, delim) {
-  // Generic CSV/TSV parser with quote support
+  // CSV/TSV with quotes
   const rows = [];
   let field = '', row = [], inQuotes = false;
   for (let i = 0; i < text.length; i++) {
     const c = text[i];
     if (inQuotes) {
       if (c === '"') {
-        if (text[i + 1] === '"') { field += '"'; i++; } // escaped quote
+        if (text[i + 1] === '"') { field += '"'; i++; }
         else inQuotes = false;
       } else field += c;
     } else {
@@ -50,27 +52,16 @@ function parseWithDelimiter(text, delim) {
   return rows;
 }
 
-function toISO(d) {
-  if (!d) return '';
-  const dt = new Date(d);
-  return isNaN(dt) ? '' : dt.toISOString().slice(0,10);
-}
-
-function splitMulti(s) {
-  if (!s) return [];
-  return s.split(/[,;\n\r]+/g).map(x => x.trim()).filter(Boolean);
-}
-
-function withProtocol(u) {
-  if (!u) return '';
-  return /^https?:\/\//i.test(u) ? u : 'https://' + u;
-}
+// Normalize a header to a lookup key (lowercase, strip non-alphanum)
+function norm(h) { return String(h || '').toLowerCase().replace(/[^a-z0-9]/g, ''); }
+function toISO(d) { if (!d) return ''; const dt = new Date(d); return isNaN(dt) ? '' : dt.toISOString().slice(0,10); }
+function splitMulti(s) { if (!s) return []; return s.split(/[,;\n\r]+/g).map(x=>x.trim()).filter(Boolean); }
+function withProtocol(u) { if (!u) return ''; return /^https?:\/\//i.test(u) ? u : 'https://' + u; }
 
 function buildEmbed(link) {
-  if (!link) return { embed:'', linkOut:'' };
+  if (!link) return { embed: '', linkOut: '' };
   const t = link.trim();
   if (t.startsWith('<iframe')) return { embed: t, linkOut: '' };
-
   if (/forms\.office\.com/i.test(t)) {
     const url = withProtocol(t);
     const add = /embed=true/i.test(url) ? '' : (url.includes('?') ? '&embed=true' : '?embed=true');
@@ -79,10 +70,9 @@ function buildEmbed(link) {
   if (/youtube\.com|youtu\.be|spotify\.com/i.test(t)) {
     return { embed: `<iframe src="${t}" frameborder="0" allowfullscreen></iframe>`, linkOut: '' };
   }
-  return { embed:'', linkOut: t };
+  return { embed: '', linkOut: t };
 }
 
-// ---- main ----
 function main() {
   const dataFile = readFirstExisting(DATA_DIR, FILE_CANDIDATES);
   if (!dataFile) {
@@ -98,60 +88,65 @@ function main() {
     return;
   }
 
-  const header = rows.shift().map(h => h.trim().toLowerCase());
-  const idx = (name) => header.indexOf(name.toLowerCase());
+  const header = rows.shift();
+  const map = Object.fromEntries(header.map(h => [norm(h), h]));
 
-  const iId    = idx('id');
-  const iStart = idx('start time');
-  const iDone  = idx('completion time');
-  const iNick  = idx('name/nickname');
-  const iName  = idx('name');
-  const iCat   = idx('post category');
-  const iTitle = idx('post title');
-  const iCap   = idx('post caption');
-  const iLink  = idx('link');
-  const iFiles = idx('files');
-  const iStat  = idx('status');
+  // Expected headers from your example:
+  // Id | Start time | Completion time | Email | Name | Name/Nickname |
+  // Post Type | Post Title | Post Caption/Summary | Link | Upload Files! | Status
+  const h = {
+    id:                map[norm('Id')],
+    starttime:         map[norm('Start time')],
+    completiontime:    map[norm('Completion time')],
+    email:             map[norm('Email')],
+    name:              map[norm('Name')],
+    namenickname:      map[norm('Name/Nickname')],
+    posttype:          map[norm('Post Type')],
+    posttitle:         map[norm('Post Title')],
+    postcaptionsummary:map[norm('Post Caption/Summary')],
+    link:              map[norm('Link')],
+    uploadfiles:       map[norm('Upload Files!')],
+    status:            map[norm('Status')]
+  };
+
+  // Build an index lookup once
+  const idx = Object.fromEntries(Object.entries(h).map(([k, hdr]) => [k, hdr ? header.indexOf(hdr) : -1]));
 
   const posts = rows
     .filter(r => {
-      if (iStat < 0) return true;
-      const v = (r[iStat] || '').toString().toLowerCase();
-      return v === '' || v === 'approved';
+      if (!APPROVED_ONLY) return true;
+      if (idx.status < 0) return false; // no status column: publish nothing when APPROVED_ONLY
+      const v = String(r[idx.status] || '').toLowerCase();
+      return v === 'approved';
     })
     .map(r => {
-      const title   = (r[iTitle] || '').trim();
-      const summary = (r[iCap]   || '').trim();
-      const nick    = ((r[iNick] || r[iName]) || '').trim();
-      const catRaw  = (r[iCat]   || '').trim().toLowerCase();
-      const link    = (r[iLink]  || '').trim();
-      const files   = (r[iFiles] || '').trim();
-      const date    = toISO((r[iStart] || r[iDone] || '').trim());
+      const title   = (idx.posttitle >= 0 ? r[idx.posttitle] : '').trim();
+      const summary = (idx.postcaptionsummary >= 0 ? r[idx.postcaptionsummary] : '').trim();
+      const nick    = ((idx.namenickname >= 0 ? r[idx.namenickname] : '') || (idx.name >= 0 ? r[idx.name] : '')).trim();
+      const typeRaw = (idx.posttype >= 0 ? r[idx.posttype] : '').trim().toLowerCase();
+      const link    = (idx.link >= 0 ? r[idx.link] : '').trim();
+      const files   = (idx.uploadfiles >= 0 ? r[idx.uploadfiles] : '').trim();
+      const date    = toISO(((idx.starttime >= 0 ? r[idx.starttime] : '') || (idx.completiontime >= 0 ? r[idx.completiontime] : '')).trim());
 
-      // tags from category, plus poll detection
       const tags = [];
-      if (catRaw === 'music') tags.push('music');
-      if (catRaw === 'photos' || catRaw === 'photo') tags.push('photography');
-      if (catRaw === 'art') tags.push('art');
+      if (typeRaw === 'music') tags.push('music');
+      if (typeRaw === 'photos' || typeRaw === 'photo') tags.push('photography');
+      if (typeRaw === 'art') tags.push('art');
       if (/forms\.office\.com/i.test(link) || /^\s*<iframe/i.test(link)) tags.push('poll');
 
       const { embed, linkOut } = buildEmbed(link);
-
       const images = splitMulti(files);
-      const obj = {};
 
+      const obj = {};
       if (title)   obj.title = title;
-      if (date)    obj.date = date;
+      if (date)    obj.date  = date;
       if (summary) obj.summary = summary;
       if (tags.length) obj.tags = tags;
-
       if (images.length > 1) obj.images = images;
       else if (images.length === 1) obj.image = images[0];
-
       if (embed) obj.embed = embed;
       if (!embed && linkOut) obj.link = linkOut;
       if (nick) obj.caption = `Submitted by ${nick}`;
-
       return obj;
     })
     .filter(p => Object.keys(p).length > 0)
