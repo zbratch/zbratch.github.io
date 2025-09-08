@@ -4,16 +4,7 @@
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>DBR Studio</title>
-
-  <!-- Styles -->
   <link rel="stylesheet" href="./assets/styles.css"/>
-
-  <!-- App JS (defines window.loadPosts) -->
-  <script defer src="./assets/script.js"></script>
-
-  <!-- Favicons (optional)
-  <link rel="icon" href="./assets/favicon.ico">
-  -->
 </head>
 <body>
   <nav>
@@ -30,10 +21,7 @@
 
   <header class="hero container">
     <h1>Make, share, and vibe.</h1>
-    <p>
-      DBR Studio is our creative clubhouse for <strong>music</strong>, <strong>photography</strong>, and <strong>art</strong>.
-      Post playlists, pic-of-the-day, polls, and your own creations—kindly and responsibly.
-    </p>
+    <p>DBR Studio is our creative clubhouse for <strong>music</strong>, <strong>photography</strong>, and <strong>art</strong>. Post playlists, pic-of-the-day, polls, and your own creations—kindly and responsibly.</p>
     <div class="flex" style="margin-top:16px">
       <a class="btn" href="./music.html">Start with Music</a>
       <a class="btn ghost" href="./photography.html">See Photos</a>
@@ -45,9 +33,7 @@
     <section aria-labelledby="latest-heading">
       <h2 id="latest-heading" class="section-title">Latest from the Club</h2>
       <div id="latest">
-        <noscript>
-          <p class="muted">Enable JavaScript to view posts.</p>
-        </noscript>
+        <noscript><p class="muted">Enable JavaScript to view posts.</p></noscript>
       </div>
     </section>
 
@@ -78,17 +64,64 @@
 
   <footer class="footer">© 2025 DBR Studio — Built for GitHub Pages</footer>
 
+  <!-- Inline minimal renderer -->
   <script>
-    // Render the latest posts on load (reads ./posts/posts.json)
-    document.addEventListener('DOMContentLoaded', () => {
-      if (typeof loadPosts !== 'function') {
-        console.error('loadPosts is not defined. Check ./assets/script.js');
-        const el = document.querySelector('#latest');
-        if (el) el.innerHTML = '<div class="error">Could not load posts.</div>';
-        return;
+    async function fetchPosts() {
+      const url = './posts/posts.json?_=' + Date.now();
+      const res = await fetch(url, { cache: 'no-store' });
+      if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
+      return res.json();
+    }
+
+    function renderPost(p) {
+      const tags = Array.isArray(p.tags) ? p.tags.join(', ') : '';
+      const hasMany = Array.isArray(p.images) && p.images.length > 0;
+      const img = p.image || (hasMany ? p.images[0] : null);
+
+      let media = '';
+      if (p.embed) {
+        media = `<div class="embed">${p.embed}</div>`;
+      } else if (img) {
+        media = `<div class="media"><img src="${img}" alt="${p.title || ''}"></div>`;
+      } else if (p.link) {
+        media = `<p class="ext"><a href="${p.link}" target="_blank" rel="noopener">Open link →</a></p>`;
       }
-      loadPosts('#latest', { layout: 'list', limit: 12 });
-    });
+
+      const thumbs = hasMany ? `<div class="thumbs">${p.images.map(u => `<img src="${u}" alt="" loading="lazy">`).join('')}</div>` : '';
+
+      return `
+        <article class="card">
+          ${media}
+          <div class="content">
+            <h3>${p.title || 'Untitled'}</h3>
+            <p class="meta">${p.date || ''}${tags ? ' · ' + tags : ''}</p>
+            ${p.summary ? `<p>${p.summary}</p>` : ''}
+            ${p.caption ? `<p class="caption">${p.caption}</p>` : ''}
+            ${thumbs}
+          </div>
+        </article>
+      `;
+    }
+
+    async function boot() {
+      const mount = document.getElementById('latest');
+      try {
+        const posts = await fetchPosts();
+        if (!Array.isArray(posts) || posts.length === 0) {
+          mount.innerHTML = `<p class="muted">No posts yet.</p>`;
+          console.warn('posts.json loaded but is empty or not an array.', posts);
+          return;
+        }
+        // Show the latest 12
+        const list = posts.slice(0, 12).map(renderPost).join('');
+        mount.innerHTML = list;
+      } catch (err) {
+        console.error(err);
+        mount.innerHTML = `<div class="error">Could not load posts.</div>`;
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', boot);
   </script>
 </body>
 </html>
