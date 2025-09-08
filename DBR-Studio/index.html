@@ -64,40 +64,58 @@
 
   <footer class="footer">© 2025 DBR Studio — Built for GitHub Pages</footer>
 
-  <!-- Inline minimal renderer -->
+  <!-- Inline renderer: Title, Desc, Images, Embed, "Submitted by X on Y" -->
   <script>
-    async function fetchPosts() {
-      const url = './posts/posts.json?_=' + Date.now();
-      const res = await fetch(url, { cache: 'no-store' });
-      if (!res.ok) throw new Error(`Failed to load ${url}: ${res.status}`);
+    async function getPosts() {
+      const res = await fetch('./posts/posts.json?_=' + Date.now(), { cache: 'no-store' });
+      if (!res.ok) throw new Error('Failed to load posts.json: ' + res.status);
       return res.json();
     }
 
-    function renderPost(p) {
-      const tags = Array.isArray(p.tags) ? p.tags.join(', ') : '';
-      const hasMany = Array.isArray(p.images) && p.images.length > 0;
-      const img = p.image || (hasMany ? p.images[0] : null);
+    function fmtDate(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      if (isNaN(d)) return iso;
+      return d.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+    }
 
-      let media = '';
-      if (p.embed) {
-        media = `<div class="embed">${p.embed}</div>`;
-      } else if (img) {
-        media = `<div class="media"><img src="${img}" alt="${p.title || ''}"></div>`;
-      } else if (p.link) {
-        media = `<p class="ext"><a href="${p.link}" target="_blank" rel="noopener">Open link →</a></p>`;
+    function escapeHTML(s='') {
+      return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function renderPost(p) {
+      const title = escapeHTML(p.title || 'Untitled');
+      const summary = p.summary ? `<p class="summary">${escapeHTML(p.summary)}</p>` : '';
+
+      // IMAGES (all of them, before embed)
+      let imagesHTML = '';
+      if (Array.isArray(p.images) && p.images.length) {
+        imagesHTML = `
+          <div class="images">
+            ${p.images.map(u => `<img src="${u}" alt="${title}" loading="lazy">`).join('')}
+          </div>`;
+      } else if (p.image) {
+        imagesHTML = `<div class="images"><img src="${p.image}" alt="${title}"></div>`;
       }
 
-      const thumbs = hasMany ? `<div class="thumbs">${p.images.map(u => `<img src="${u}" alt="" loading="lazy">`).join('')}</div>` : '';
+      // EMBED (after images, if present)
+      const embedHTML = p.embed ? `<div class="embed">${p.embed}</div>` : (p.link ? `<p class="ext"><a href="${p.link}" target="_blank" rel="noopener">Open link →</a></p>` : '');
+
+      // CAPTION LINE
+      const dateStr = fmtDate(p.date || '');
+      const who = p.caption ? escapeHTML(p.caption.replace(/^Submitted by\s*/i, '').trim()) : '';
+      const captionLine = (who || dateStr)
+        ? `<p class="meta">Submitted by ${who || 'Anonymous'}${dateStr ? ' on ' + dateStr : ''}</p>`
+        : '';
 
       return `
-        <article class="card">
-          ${media}
+        <article class="card post">
           <div class="content">
-            <h3>${p.title || 'Untitled'}</h3>
-            <p class="meta">${p.date || ''}${tags ? ' · ' + tags : ''}</p>
-            ${p.summary ? `<p>${p.summary}</p>` : ''}
-            ${p.caption ? `<p class="caption">${p.caption}</p>` : ''}
-            ${thumbs}
+            <h3 class="title">${title}</h3>
+            ${summary}
+            ${imagesHTML}
+            ${embedHTML}
+            ${captionLine}
           </div>
         </article>
       `;
@@ -106,17 +124,16 @@
     async function boot() {
       const mount = document.getElementById('latest');
       try {
-        const posts = await fetchPosts();
+        const posts = await getPosts();
         if (!Array.isArray(posts) || posts.length === 0) {
           mount.innerHTML = `<p class="muted">No posts yet.</p>`;
-          console.warn('posts.json loaded but is empty or not an array.', posts);
           return;
         }
-        // Show the latest 12
-        const list = posts.slice(0, 12).map(renderPost).join('');
-        mount.innerHTML = list;
-      } catch (err) {
-        console.error(err);
+        // Latest 12
+        const html = posts.slice(0, 12).map(renderPost).join('');
+        mount.innerHTML = html;
+      } catch (e) {
+        console.error(e);
         mount.innerHTML = `<div class="error">Could not load posts.</div>`;
       }
     }
