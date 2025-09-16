@@ -1,7 +1,14 @@
 title: Club Central
-description: Workplace club blog (built from GitHub Issues)
+description: Workplace club blog
+# If this is a project page: https://ORG.github.io/REPO, set baseurl: "/REPO"
+# If it’s an org/user site or custom domain, set baseurl: "".
+url: "https://zbratch.github.io"      # e.g., https://org.github.io
+baseurl: "/REPO"               # or "" if not a project page
+
+# Put all posts under /DBR-Studio/
+permalink: /DBR-Studio/:year/:month/:day/:title/
+
 timezone: America/Chicago
-permalink: /:year/:month/:day/:title/
 markdown: kramdown
 plugins:
-  - jekyll-feed
+  - jekyll-feed   # allowed on GitHub Pages
