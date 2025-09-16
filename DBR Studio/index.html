@@ -1,0 +1,19 @@
+---
+layout: default
+title: Home
+---
+<h2>Latest posts</h2>
+<ul class="post-list">
+  {% for post in site.posts %}
+    {% if post.published != false %}
+      <li class="card">
+        <a href="{{ post.url | relative_url }}"><h3>{{ post.title }}</h3></a>
+        <p class="meta">By {{ post.author }} — {{ post.date | date: "%b %-d, %Y" }} — {{ post.category }}</p>
+        {% if post.images and post.images[0] %}
+          <img class="thumb" src="{{ post.images[0] }}" alt="{{ post.title }}">
+        {% endif %}
+        {% if post.caption %}<p>{{ post.caption }}</p>{% endif %}
+      </li>
+    {% endif %}
+  {% endfor %}
+</ul>

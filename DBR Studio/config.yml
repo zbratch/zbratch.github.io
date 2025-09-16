@@ -1,0 +1,7 @@
+title: Club Central
+description: Workplace club blog (built from GitHub Issues)
+timezone: America/Chicago
+permalink: /:year/:month/:day/:title/
+markdown: kramdown
+plugins:
+  - jekyll-feed
