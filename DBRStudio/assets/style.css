@@ -1,44 +1,54 @@
 :root{
-  --max: 1000px; --bg:#0b0d10; --card:#12151a; --muted:#a7b0c0;
-  --ring:#2b6cf6; --text:#e9edf4; --border:#1e232b; --chip:#1a1f27;
+  --max: 1000px;
+  --bg:#ffffff;        /* main background (white) */
+  --card:#ffffff;      /* card background */
+  --muted:#555555;     /* muted text (grey/black mix) */
+  --accent:#c62828;    /* red accent */
+  --text:#111111;      /* main text (black) */
+  --border:#dddddd;    /* light grey borders */
+  --chip:#f3f3f3;      /* light background for tags */
 }
 
 *{box-sizing:border-box}
 html,body{height:100%}
 body{
-  margin:0; font-family: ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial;
-  color:var(--text); background:linear-gradient(180deg,#0b0d10 0%,#0f1320 100%);
+  margin:0;
+  font-family: ui-sans-serif,system-ui,"Segoe UI",Roboto,Arial;
+  color:var(--text);
+  background:var(--bg);
 }
 
 main{max-width:var(--max); margin:32px auto; padding:0 16px}
 
 header{margin-bottom:16px}
-header h1{margin:0;font-size:28px;letter-spacing:.2px}
+header h1{margin:0;font-size:28px;letter-spacing:.2px; color:var(--text);}
 header p{margin:6px 0 0;color:var(--muted)}
 nav{margin-top:8px; display:flex; gap:10px; flex-wrap:wrap}
 nav a{
-  color:#a9c1ff; text-decoration:none; padding:4px 8px; border-radius:8px;
+  color:var(--accent); text-decoration:none; padding:4px 8px; border-radius:8px;
 }
-nav a:hover{background:#17203a}
+nav a:hover{background:#fbe9e7}
 
 hr{border:0; border-top:1px solid var(--border); margin:16px 0 20px}
 
 .toolbar{
-  position:sticky; top:0; z-index:5; backdrop-filter: blur(8px);
-  background: rgba(11,13,16,.65); border:1px solid var(--border);
-  padding:10px; border-radius:12px; margin-bottom:16px; display:flex; gap:10px; align-items:center;
+  background:#fafafa; border:1px solid var(--border);
+  padding:10px; border-radius:12px; margin-bottom:16px;
+  display:flex; gap:10px; align-items:center;
 }
 .select, .input{
-  background:var(--card); color:var(--text); border:1px solid var(--border);
+  background:var(--bg); color:var(--text); border:1px solid var(--border);
   padding:10px 12px; border-radius:10px; outline:none; min-width:180px;
 }
 .input{flex:1}
 .button{
-  padding:10px 14px; border-radius:10px; border:1px solid var(--ring);
-  background:linear-gradient(180deg,#3768ff,#2b6cf6); color:white; cursor:pointer;
+  padding:10px 14px; border-radius:10px;
+  border:1px solid var(--accent);
+  background:var(--accent); color:#fff;
+  cursor:pointer;
 }
 .button.ghost{
-  background:transparent; color:#a9c1ff; border-color:#2a3550;
+  background:transparent; color:var(--accent); border-color:var(--accent);
 }
 .button:active{transform:translateY(1px)}
 
@@ -48,18 +58,26 @@ hr{border:0; border-top:1px solid var(--border); margin:16px 0 20px}
 
 .card{
   background:var(--card); border:1px solid var(--border); border-radius:14px;
-  overflow:hidden; box-shadow: 0 4px 16px rgba(0,0,0,.25);
+  overflow:hidden; box-shadow: 0 2px 6px rgba(0,0,0,.08);
   transition: transform .08s ease;
 }
-.card:hover{ transform: translateY(-1px); }
+.card:hover{ transform: translateY(-2px); }
 .card img{ width:100%; display:block; aspect-ratio: 16/10; object-fit:cover; }
 .card .pad{ padding:12px; }
-.card h3{ margin:6px 0 4px; font-size:18px }
+.card h3{ margin:6px 0 4px; font-size:18px; color:var(--text); }
 .meta{ color:var(--muted); font-size:13px; margin-bottom:8px }
-.caption{ margin:0 0 8px; color:#d7dde9; }
+.caption{ margin:0 0 8px; color:var(--text); }
 .tags{ display:flex; flex-wrap:wrap; gap:6px }
-.tag{ background:var(--chip); border:1px solid var(--border); color:#c8d2e8; font-size:12px; padding:4px 8px; border-radius:999px; text-decoration:none }
+.tag{
+  background:var(--chip); border:1px solid var(--border);
+  color:var(--accent); font-size:12px;
+  padding:4px 8px; border-radius:999px; text-decoration:none
+}
 
-.detail-img{ width:100%; height:auto; display:block; border-radius:12px; margin:12px 0 }
-.page{ background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px }
-iframe{ width:100%; min-height:900px; border:0; border-radius:12px; background:#0b0d10 }
+.detail-img{
+  width:100%; height:auto; display:block; border-radius:12px; margin:12px 0
+}
+.page{
+  background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px
+}
+iframe{ width:100%; min-height:900px; border:0; border-radius:12px; background:#fafafa }
