@@ -2,7 +2,7 @@
 "posts": [
 {
 "id": "1",
-"title": "Test Post",
+"title": "Cool Car",
 "author": "Zach Bratcher",
 "email": "zbratcher@dbrinc.com",
 "category": "Photos",
@@ -14,15 +14,28 @@
 },
 {
 "id": "2",
-"title": "Test Post 2",
-"author": "Jimmy",
-"email": "",
-"category": "Photos",
-"caption": "hello",
-"image": "",
+"title": "Cool Art",
+"author": "Zach Bratcher",
+"email": "zbratcher@dbrinc.com",
+"category": "Art",
+"caption": "Found this cool looking art",
+"image": "media/dbrlogo2.png",
 "link": "",
-"tags": ["Photos"],
+"tags": ["Art"],
+"date": "2025-09-16T08:25:00-05:00"
+},
+{
+"id": "3",
+"title": "Cool Music",
+"author": "Zach Bratcher",
+"email": "zbratcher@dbrinc.com",
+"category": "Music",
+"caption": "Found this cool sounding music",
+"image": "",
+"link": "https://youtu.be/BLXwpGCn2KQ?si=9xtXsKWiKtg_UUdp",
+"tags": ["Music"],
 "date": "2025-09-16T08:25:00-05:00"
 }
 ]
 }
+
