@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>DBR Studio — Home</title>
-  <link rel="stylesheet" href="assets/style.css"/>
+  <title>Club Creative — Home</title>
+  <link rel="stylesheet" href="assets/style.css?v=2025-10-01-2"/>
 </head>
 <body>
   <main>
     <header>
-      <h1><a href="index.html" style="text-decoration:none;color:inherit">DBR Studio</a></h1>
+      <h1><a href="index.html" style="text-decoration:none;color:inherit">Club Creative</a></h1>
       <p>Photos • Art • Music — by our members</p>
       <nav>
         <a href="index.html">Home</a>
@@ -28,22 +28,19 @@
 
     <section id="feed" class="grid" aria-live="polite"></section>
 
+    <!-- Card template -->
     <template id="card">
-        <article class="card">
-            <a class="image-link" href="#"><img class="img" alt=""/></a>
-            <div class="pad">
-            <h3><a class="title" href="#"></a></h3>
-            <div class="meta"></div>
-            <p class="caption"></p>
-
-            <!-- New: link/media badge appears here if a post has `link` -->
-            <div class="badge-row"></div>
-
-            <div class="tags"></div>
-            </div>
-        </article>
-        </template>
-
+      <article class="card">
+        <a class="image-link" href="#"><img class="img" alt=""/></a>
+        <div class="pad">
+          <h3><a class="title" href="#"></a></h3>
+          <div class="meta"></div>
+          <p class="caption"></p>
+          <div class="badge-row"></div>
+          <div class="tags"></div>
+        </div>
+      </article>
+    </template>
   </main>
 
   <script>
@@ -70,30 +67,78 @@
       }
     }
 
+    function ytIdFrom(url){
+      try{
+        if (url.includes('watch?v=')) return url.split('watch?v=')[1].split('&')[0];
+        if (url.includes('youtu.be/')) return url.split('youtu.be/')[1].split('?')[0];
+      }catch(e){}
+      return null;
+    }
+
     function render(list){
       FEED.replaceChildren();
       if (!list.length){ FEED.textContent='No posts match.'; return; }
+
       for (const p of list){
-        const node = TPL.content.cloneNode(true);
+        const node  = TPL.content.cloneNode(true);
         const title = p.title || 'Untitled';
         const link  = 'post.html?id=' + encodeURIComponent(p.id);
 
-        node.querySelector('.title').textContent = title;
-        node.querySelector('.title').href = link;
+        // Title
+        const titleA = node.querySelector('.title');
+        titleA.textContent = title;
+        titleA.href = link;
 
+        // Image (normal, or YouTube thumbnail fallback)
         const imgWrap = node.querySelector('.image-link');
-        const img = node.querySelector('.img');
-        if (p.image && String(p.image).trim() !== ''){
-          img.src = p.image; img.alt = title; imgWrap.href = link;
-        } else { imgWrap.remove(); }
+        const imgEl   = node.querySelector('.img');
+        let showedImg = false;
 
+        if (p.image && String(p.image).trim() !== ''){
+          imgEl.src = p.image; imgEl.alt = title; imgWrap.href = link;
+          showedImg = true;
+        } else if (p.link){
+          const id = ytIdFrom(String(p.link));
+          if (id){
+            imgEl.src = 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg';
+            imgEl.alt = title + ' (YouTube)';
+            imgWrap.href = link;
+            showedImg = true;
+          }
+        }
+        if (!showedImg){ imgWrap.remove(); }
+
+        // Meta
         node.querySelector('.meta').textContent =
           [p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
 
+        // Caption
         const cap = node.querySelector('.caption');
         if (p.caption && String(p.caption).trim() !== '') cap.textContent = p.caption;
         else cap.remove();
 
+        // Badge row for links
+        const badgeRow = node.querySelector('.badge-row');
+        if (p.link && String(p.link).trim() !== ''){
+          const url = p.link.trim();
+          const a = document.createElement('a');
+          a.className = 'badge';
+          a.target = '_blank'; a.rel = 'noopener';
+          a.href = url;
+
+          if (url.includes('youtube.com') || url.includes('youtu.be')){
+            a.innerHTML = '<span class="ico">▶</span><span>Watch</span>';
+          } else if (url.includes('soundcloud.com')){
+            a.innerHTML = '<span class="ico">♪</span><span>Listen</span>';
+          } else {
+            a.innerHTML = '<span class="ico">↗</span><span>Open</span>';
+          }
+          badgeRow.appendChild(a);
+        } else {
+          badgeRow.remove();
+        }
+
+        // Tags
         const tagsWrap = node.querySelector('.tags');
         if (Array.isArray(p.tags) && p.tags.length){
           for (const t of p.tags){
