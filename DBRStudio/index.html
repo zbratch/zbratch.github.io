@@ -29,16 +29,21 @@
     <section id="feed" class="grid" aria-live="polite"></section>
 
     <template id="card">
-      <article class="card">
-        <a class="image-link" href="#"><img class="img" alt=""/></a>
-        <div class="pad">
-          <h3><a class="title" href="#"></a></h3>
-          <div class="meta"></div>
-          <p class="caption"></p>
-          <div class="tags"></div>
-        </div>
-      </article>
-    </template>
+        <article class="card">
+            <a class="image-link" href="#"><img class="img" alt=""/></a>
+            <div class="pad">
+            <h3><a class="title" href="#"></a></h3>
+            <div class="meta"></div>
+            <p class="caption"></p>
+
+            <!-- New: link/media badge appears here if a post has `link` -->
+            <div class="badge-row"></div>
+
+            <div class="tags"></div>
+            </div>
+        </article>
+        </template>
+
   </main>
 
   <script>

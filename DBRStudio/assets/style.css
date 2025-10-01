@@ -125,3 +125,19 @@ iframe{ width:100%; min-height:900px; border:0; border-radius:12px; background:#
   nav a{ padding:6px 10px }
   .select{ min-width: 140px }
 }
+
+/* --- Link badges on cards --- */
+.badge {
+  display:inline-flex; align-items:center; gap:6px;
+  background: var(--chip);
+  border: 1px solid var(--border);
+  color: var(--accent);
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 999px;
+  text-decoration: none;
+}
+.badge:hover { background: #ffe9e9; }
+
+.badge-row { display:flex; gap:8px; margin-top: 8px; }
+.badge .ico { font-weight: 700; line-height: 1; }
