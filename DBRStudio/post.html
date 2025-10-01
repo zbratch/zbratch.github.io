@@ -1,77 +1,96 @@
 <!doctype html>
-<p>Photos • Art • Music — by our members</p>
-<nav>
-<a href="/">Home</a>
-</nav>
-<hr />
-</header>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Club Creative — Post</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="index.html">Club Creative</a></h1>
+      <p>Photos • Art • Music — by our members</p>
+      <nav>
+        <a href="index.html">Home</a>
+      </nav>
+      <hr />
+    </header>
 
+    <article id="post">
+      <h2 id="title">Loading…</h2>
+      <div id="meta" class="post-meta"></div>
+      <p id="image-wrap"></p>
+      <p id="caption"></p>
+      <p id="link"></p>
+      <p id="tags"></p>
+    </article>
+  </main>
 
-<article id="post">
-<h2 id="title">Loading…</h2>
-<div id="meta" class="post-meta"></div>
-<p id="image-wrap"></p>
-<p id="caption"></p>
-<p id="link"></p>
-<p id="tags"></p>
-</article>
-</main>
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id     = params.get('id');
+    // Relative path so it works in subfolders like DBRStudio/
+    const src    = 'data/posts.json?v=' + Date.now();
 
+    function fmtDate(iso) {
+      try {
+        return new Date(iso).toLocaleDateString(undefined,
+          {year:'numeric', month:'short', day:'numeric'});
+      } catch(e) { return iso || ''; }
+    }
 
-<script>
-const params = new URLSearchParams(location.search);
-const id = params.get('id');
-const src = '/data/posts.json?v=' + Date.now();
+    fetch(src)
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(data => {
+        const posts = data.posts || [];
+        const p = posts.find(x => String(x.id) === String(id));
 
+        const titleEl = document.getElementById('title');
+        const metaEl  = document.getElementById('meta');
+        const capEl   = document.getElementById('caption');
+        const linkEl  = document.getElementById('link');
+        const imgWrap = document.getElementById('image-wrap');
+        const tagsEl  = document.getElementById('tags');
 
-function fmtDate(iso) {
-try { return new Date(iso).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}); }
-catch(e) { return iso || ''; }
-}
+        if (!p) { titleEl.textContent = 'Post not found'; return; }
 
+        document.title = 'Club Creative — ' + (p.title || 'Untitled');
+        titleEl.textContent = p.title || 'Untitled';
+        metaEl.textContent  = [p.author, fmtDate(p.date), p.category]
+                                .filter(Boolean).join(' · ');
 
-fetch(src).then(r=>r.json()).then(data => {
-const posts = data.posts || [];
-const p = posts.find(x => String(x.id) === String(id));
-const titleEl = document.getElementById('title');
-const metaEl = document.getElementById('meta');
-const capEl = document.getElementById('caption');
-const linkEl = document.getElementById('link');
-const imgWrap = document.getElementById('image-wrap');
-const tagsEl = document.getElementById('tags');
+        if (p.image && String(p.image).trim() !== '') {
+          const img = new Image();
+          img.src = p.image;
+          img.alt = p.title || '';
+          img.className = 'detail-img';
+          imgWrap.replaceChildren(img);
+        } else {
+          imgWrap.remove();
+        }
 
+        if (p.caption && String(p.caption).trim() !== '') capEl.textContent = p.caption;
+        else capEl.remove();
 
-if (!p) { titleEl.textContent = 'Post not found'; return; }
+        if (p.link && String(p.link).trim() !== '') {
+          const a = document.createElement('a');
+          a.href = p.link; a.target = '_blank'; a.rel = 'noopener';
+          a.textContent = 'External Link →';
+          linkEl.replaceChildren(a);
+        } else linkEl.remove();
 
-
-document.title = 'Club Creative — ' + (p.title || 'Untitled');
-titleEl.textContent = p.title || 'Untitled';
-metaEl.textContent = [p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
-
-
-if (p.image) {
-const img = new Image(); img.src = p.image; img.alt = p.title || '';
-img.className = 'detail-img';
-imgWrap.replaceChildren(img);
-} else imgWrap.remove();
-
-
-if (p.caption) capEl.textContent = p.caption; else capEl.remove();
-
-
-if (p.link) {
-const a = document.createElement('a'); a.href = p.link; a.target = '_blank'; a.rel='noopener';
-a.textContent = 'External Link →'; linkEl.replaceChildren(a);
-} else linkEl.remove();
-
-
-if (Array.isArray(p.tags) && p.tags.length) {
-tagsEl.textContent = 'Tags: ' + p.tags.map(t => '#' + t).join(' ');
-} else tagsEl.remove();
-}).catch(err => {
-document.getElementById('title').textContent = 'Error loading post.';
-console.error(err);
-});
-</script>
+        if (Array.isArray(p.tags) && p.tags.length) {
+          tagsEl.textContent = 'Tags: ' + p.tags.map(t => '#' + t).join(' ');
+        } else tagsEl.remove();
+      })
+      .catch(err => {
+        document.getElementById('title').textContent = 'Error loading post.';
+        console.error('posts.json fetch error:', err);
+      });
+  </script>
 </body>
 </html>

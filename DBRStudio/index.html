@@ -1,82 +1,118 @@
 <!doctype html>
-<div id="feed" class="post-grid" aria-live="polite"></div>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Club Creative — Home</title>
+  <link rel="stylesheet" href="assets/style.css" />
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="index.html">Club Creative</a></h1>
+      <p>Photos • Art • Music — by our members</p>
+      <nav>
+        <a href="index.html">Home</a>
+        <span>·</span>
+        <a href="#" id="refresh">Refresh</a>
+      </nav>
+      <hr />
+    </header>
 
+    <h2>Latest Posts</h2>
+    <div id="feed" class="post-grid" aria-live="polite"></div>
 
-<template id="card-template">
-<article class="post-card">
-<a class="image-link" href="#"><img class="card-img" alt="" /></a>
-<h3><a class="title-link" href="#"></a></h3>
-<div class="post-meta"></div>
-<p class="caption"></p>
-<div class="tags"></div>
-</article>
-</template>
-</main>
+    <template id="card-template">
+      <article class="post-card">
+        <a class="image-link" href="#"><img class="card-img" alt="" /></a>
+        <h3><a class="title-link" href="#"></a></h3>
+        <div class="post-meta"></div>
+        <p class="caption"></p>
+        <div class="tags"></div>
+      </article>
+    </template>
+  </main>
 
+  <script>
+    const FEED = document.getElementById('feed');
+    const TPL  = document.getElementById('card-template');
+    // Relative path so it works in subfolders like DBRStudio/
+    const src  = 'data/posts.json?v=' + Date.now();
 
-<script>
-const FEED = document.getElementById('feed');
-const TPL = document.getElementById('card-template');
-const src = '/data/posts.json?v=' + Date.now(); // cache-bust for manual refresh
+    function fmtDate(iso) {
+      try {
+        return new Date(iso).toLocaleDateString(undefined,
+          {year:'numeric', month:'short', day:'numeric'});
+      } catch(e) { return iso || ''; }
+    }
 
+    fetch(src)
+      .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+      })
+      .then(data => {
+        const posts = (data.posts || []).slice()
+          .sort((a,b) => new Date(b.date) - new Date(a.date));
 
-function fmtDate(iso) {
-try { return new Date(iso).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}); }
-catch(e) { return iso || ''; }
-}
+        FEED.replaceChildren();
+        for (const p of posts) {
+          const node  = TPL.content.cloneNode(true);
+          const title = p.title || 'Untitled';
+          const link  = 'post.html?id=' + encodeURIComponent(p.id);
 
+          // Title
+          const titleA = node.querySelector('.title-link');
+          titleA.textContent = title;
+          titleA.href = link;
 
-fetch(src)
-.then(r => r.json())
-.then(data => {
-const posts = (data.posts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
-FEED.replaceChildren();
-for (const p of posts) {
-const node = TPL.content.cloneNode(true);
-const title = p.title || 'Untitled';
-const link = '/post.html?id=' + encodeURIComponent(p.id);
+          // Image (optional)
+          const imgLink = node.querySelector('.image-link');
+          const imgEl   = node.querySelector('.card-img');
+          if (p.image && String(p.image).trim() !== '') {
+            imgEl.src = p.image; imgEl.alt = title;
+            imgLink.href = link;
+          } else {
+            // no image — remove img + wrapper
+            imgEl.remove();
+            imgLink.remove();
+          }
 
+          // Meta
+          node.querySelector('.post-meta').textContent =
+            [p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
 
-node.querySelector('.title-link').textContent = title;
-node.querySelector('.title-link').href = link;
-node.querySelector('.image-link').href = link;
+          // Caption (optional)
+          const cap = node.querySelector('.caption');
+          if (p.caption && String(p.caption).trim() !== '') cap.textContent = p.caption;
+          else cap.remove();
 
+          // Tags (optional)
+          const tagsWrap = node.querySelector('.tags');
+          if (Array.isArray(p.tags) && p.tags.length) {
+            for (const t of p.tags) {
+              const a = document.createElement('a');
+              a.href = '#'+encodeURIComponent(t);
+              a.textContent = '#' + t;
+              tagsWrap.appendChild(a);
+            }
+          } else tagsWrap.remove();
 
-const img = node.querySelector('.card-img');
-if (p.image) { img.src = p.image; img.alt = title; }
-else { img.remove(); node.querySelector('.image-link').remove(); }
+          FEED.appendChild(node);
+        }
 
+        if (!posts.length) {
+          FEED.textContent = 'No posts yet. Add one to data/posts.json.';
+        }
+      })
+      .catch(err => {
+        FEED.textContent = 'Failed to load posts.json — check the data file path and JSON syntax.';
+        console.error('posts.json fetch error:', err);
+      });
 
-node.querySelector('.post-meta').textContent =
-[p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
-
-
-if (p.caption) node.querySelector('.caption').textContent = p.caption; else node.querySelector('.caption').remove();
-
-
-const tags = node.querySelector('.tags');
-if (Array.isArray(p.tags) && p.tags.length) {
-for (const t of p.tags) {
-const a = document.createElement('a');
-a.href = '/#' + encodeURIComponent(t);
-a.textContent = '#' + t;
-tags.appendChild(a);
-}
-} else tags.remove();
-
-
-FEED.appendChild(node);
-}
-})
-.catch(err => {
-FEED.textContent = 'Failed to load posts.json — check the data file path and JSON syntax.';
-console.error(err);
-});
-
-
-document.getElementById('refresh').addEventListener('click', e => {
-e.preventDefault(); location.reload();
-});
-</script>
+    document.getElementById('refresh').addEventListener('click', e => {
+      e.preventDefault(); location.reload();
+    });
+  </script>
 </body>
 </html>
