@@ -1,0 +1,82 @@
+<!doctype html>
+<div id="feed" class="post-grid" aria-live="polite"></div>
+
+
+<template id="card-template">
+<article class="post-card">
+<a class="image-link" href="#"><img class="card-img" alt="" /></a>
+<h3><a class="title-link" href="#"></a></h3>
+<div class="post-meta"></div>
+<p class="caption"></p>
+<div class="tags"></div>
+</article>
+</template>
+</main>
+
+
+<script>
+const FEED = document.getElementById('feed');
+const TPL = document.getElementById('card-template');
+const src = '/data/posts.json?v=' + Date.now(); // cache-bust for manual refresh
+
+
+function fmtDate(iso) {
+try { return new Date(iso).toLocaleDateString(undefined, {year:'numeric', month:'short', day:'numeric'}); }
+catch(e) { return iso || ''; }
+}
+
+
+fetch(src)
+.then(r => r.json())
+.then(data => {
+const posts = (data.posts || []).slice().sort((a,b) => new Date(b.date) - new Date(a.date));
+FEED.replaceChildren();
+for (const p of posts) {
+const node = TPL.content.cloneNode(true);
+const title = p.title || 'Untitled';
+const link = '/post.html?id=' + encodeURIComponent(p.id);
+
+
+node.querySelector('.title-link').textContent = title;
+node.querySelector('.title-link').href = link;
+node.querySelector('.image-link').href = link;
+
+
+const img = node.querySelector('.card-img');
+if (p.image) { img.src = p.image; img.alt = title; }
+else { img.remove(); node.querySelector('.image-link').remove(); }
+
+
+node.querySelector('.post-meta').textContent =
+[p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
+
+
+if (p.caption) node.querySelector('.caption').textContent = p.caption; else node.querySelector('.caption').remove();
+
+
+const tags = node.querySelector('.tags');
+if (Array.isArray(p.tags) && p.tags.length) {
+for (const t of p.tags) {
+const a = document.createElement('a');
+a.href = '/#' + encodeURIComponent(t);
+a.textContent = '#' + t;
+tags.appendChild(a);
+}
+} else tags.remove();
+
+
+FEED.appendChild(node);
+}
+})
+.catch(err => {
+FEED.textContent = 'Failed to load posts.json — check the data file path and JSON syntax.';
+console.error(err);
+});
+
+
+document.getElementById('refresh').addEventListener('click', e => {
+e.preventDefault(); location.reload();
+});
+</script>
+</body>
+</html>
