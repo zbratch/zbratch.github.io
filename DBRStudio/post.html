@@ -3,13 +3,13 @@
 <head>
   <meta charset="utf-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <title>Club Creative — Post</title>
+  <title>DBR Studio — Post</title>
   <link rel="stylesheet" href="assets/style.css"/>
 </head>
 <body>
   <main>
     <header>
-      <h1><a href="index.html" style="text-decoration:none;color:inherit">Club Creative</a></h1>
+      <h1><a href="index.html" style="text-decoration:none;color:inherit">DBR Studio</a></h1>
       <p>Photos • Art • Music — by our members</p>
       <nav><a href="index.html">Home</a></nav>
       <hr/>
@@ -51,7 +51,7 @@
 
       if(!p){ titleEl.textContent='Post not found'; return; }
 
-      document.title = 'Club Creative — ' + (p.title||'Untitled');
+      document.title = 'DBR Studio — ' + (p.title||'Untitled');
       titleEl.textContent = p.title || 'Untitled';
       metaEl.textContent = [p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
 
