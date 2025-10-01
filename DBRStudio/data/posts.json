@@ -6,8 +6,8 @@
 "author": "Zach Bratcher",
 "email": "zbratcher@dbrinc.com",
 "category": "Photos",
-"caption": "(Optional) description of the piece.",
-"image": "/media/sample.jpg",
+"caption": "Had the opportunity to purchase a limited edition 65th anniversay Ford Mustang GT. One of only 1965 ever made, and one of only 160 in this color.",
+"image": "/media/mustang.png",
 "link": "",
 "tags": ["Photos"],
 "date": "2025-09-16T08:06:00-05:00"
@@ -19,7 +19,7 @@
 "email": "",
 "category": "Photos",
 "caption": "hello",
-"image": "/media/dbrlogo2_Zach%20Bratcher.png",
+"image": "",
 "link": "",
 "tags": ["Photos"],
 "date": "2025-09-16T08:25:00-05:00"
