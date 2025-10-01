@@ -1,118 +1,134 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <title>Club Creative — Home</title>
-  <link rel="stylesheet" href="assets/style.css" />
+  <link rel="stylesheet" href="assets/style.css"/>
 </head>
 <body>
   <main>
     <header>
-      <h1><a href="index.html">Club Creative</a></h1>
+      <h1><a href="index.html" style="text-decoration:none;color:inherit">Club Creative</a></h1>
       <p>Photos • Art • Music — by our members</p>
       <nav>
         <a href="index.html">Home</a>
-        <span>·</span>
-        <a href="#" id="refresh">Refresh</a>
+        <a href="submit.html">Submit</a>
       </nav>
-      <hr />
+      <hr/>
     </header>
 
-    <h2>Latest Posts</h2>
-    <div id="feed" class="post-grid" aria-live="polite"></div>
+    <div class="toolbar">
+      <select id="category" class="select">
+        <option value="">All categories</option>
+      </select>
+      <input id="search" class="input" placeholder="Search title, author, caption…"/>
+      <button id="clear" class="button ghost">Clear</button>
+    </div>
 
-    <template id="card-template">
-      <article class="post-card">
-        <a class="image-link" href="#"><img class="card-img" alt="" /></a>
-        <h3><a class="title-link" href="#"></a></h3>
-        <div class="post-meta"></div>
-        <p class="caption"></p>
-        <div class="tags"></div>
+    <section id="feed" class="grid" aria-live="polite"></section>
+
+    <template id="card">
+      <article class="card">
+        <a class="image-link" href="#"><img class="img" alt=""/></a>
+        <div class="pad">
+          <h3><a class="title" href="#"></a></h3>
+          <div class="meta"></div>
+          <p class="caption"></p>
+          <div class="tags"></div>
+        </div>
       </article>
     </template>
   </main>
 
   <script>
     const FEED = document.getElementById('feed');
-    const TPL  = document.getElementById('card-template');
-    // Relative path so it works in subfolders like DBRStudio/
+    const TPL  = document.getElementById('card');
     const src  = 'data/posts.json?v=' + Date.now();
+    const sel  = document.getElementById('category');
+    const q    = document.getElementById('search');
+    const clear= document.getElementById('clear');
+    let ALL = [];
 
-    function fmtDate(iso) {
-      try {
-        return new Date(iso).toLocaleDateString(undefined,
-          {year:'numeric', month:'short', day:'numeric'});
-      } catch(e) { return iso || ''; }
+    const fmtDate = iso => {
+      try { return new Date(iso).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }
+      catch { return iso||''; }
+    };
+
+    function buildCats(posts){
+      const set = new Set();
+      for (const p of posts) if (p.category) set.add(p.category);
+      const opts = [...set].sort();
+      for (const c of opts){
+        const o = document.createElement('option');
+        o.value = c; o.textContent = c; sel.appendChild(o);
+      }
     }
 
-    fetch(src)
-      .then(r => {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.json();
-      })
-      .then(data => {
-        const posts = (data.posts || []).slice()
-          .sort((a,b) => new Date(b.date) - new Date(a.date));
+    function render(list){
+      FEED.replaceChildren();
+      if (!list.length){ FEED.textContent='No posts match.'; return; }
+      for (const p of list){
+        const node = TPL.content.cloneNode(true);
+        const title = p.title || 'Untitled';
+        const link  = 'post.html?id=' + encodeURIComponent(p.id);
 
-        FEED.replaceChildren();
-        for (const p of posts) {
-          const node  = TPL.content.cloneNode(true);
-          const title = p.title || 'Untitled';
-          const link  = 'post.html?id=' + encodeURIComponent(p.id);
+        node.querySelector('.title').textContent = title;
+        node.querySelector('.title').href = link;
 
-          // Title
-          const titleA = node.querySelector('.title-link');
-          titleA.textContent = title;
-          titleA.href = link;
+        const imgWrap = node.querySelector('.image-link');
+        const img = node.querySelector('.img');
+        if (p.image && String(p.image).trim() !== ''){
+          img.src = p.image; img.alt = title; imgWrap.href = link;
+        } else { imgWrap.remove(); }
 
-          // Image (optional)
-          const imgLink = node.querySelector('.image-link');
-          const imgEl   = node.querySelector('.card-img');
-          if (p.image && String(p.image).trim() !== '') {
-            imgEl.src = p.image; imgEl.alt = title;
-            imgLink.href = link;
-          } else {
-            // no image — remove img + wrapper
-            imgEl.remove();
-            imgLink.remove();
+        node.querySelector('.meta').textContent =
+          [p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
+
+        const cap = node.querySelector('.caption');
+        if (p.caption && String(p.caption).trim() !== '') cap.textContent = p.caption;
+        else cap.remove();
+
+        const tagsWrap = node.querySelector('.tags');
+        if (Array.isArray(p.tags) && p.tags.length){
+          for (const t of p.tags){
+            const a = document.createElement('a');
+            a.className='tag'; a.href='index.html#'+encodeURIComponent(t);
+            a.textContent = '#'+t; tagsWrap.appendChild(a);
           }
+        } else tagsWrap.remove();
 
-          // Meta
-          node.querySelector('.post-meta').textContent =
-            [p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
+        FEED.appendChild(node);
+      }
+    }
 
-          // Caption (optional)
-          const cap = node.querySelector('.caption');
-          if (p.caption && String(p.caption).trim() !== '') cap.textContent = p.caption;
-          else cap.remove();
-
-          // Tags (optional)
-          const tagsWrap = node.querySelector('.tags');
-          if (Array.isArray(p.tags) && p.tags.length) {
-            for (const t of p.tags) {
-              const a = document.createElement('a');
-              a.href = '#'+encodeURIComponent(t);
-              a.textContent = '#' + t;
-              tagsWrap.appendChild(a);
-            }
-          } else tagsWrap.remove();
-
-          FEED.appendChild(node);
-        }
-
-        if (!posts.length) {
-          FEED.textContent = 'No posts yet. Add one to data/posts.json.';
-        }
-      })
-      .catch(err => {
-        FEED.textContent = 'Failed to load posts.json — check the data file path and JSON syntax.';
-        console.error('posts.json fetch error:', err);
+    function applyFilters(){
+      const cat = sel.value.trim().toLowerCase();
+      const term= q.value.trim().toLowerCase();
+      const list = ALL.filter(p=>{
+        const byCat = !cat || (p.category||'').toLowerCase()===cat;
+        if (!byCat) return false;
+        if (!term) return true;
+        const hay = [p.title,p.author,p.caption,(p.tags||[]).join(' ')].join(' ').toLowerCase();
+        return hay.includes(term);
       });
+      render(list);
+    }
 
-    document.getElementById('refresh').addEventListener('click', e => {
-      e.preventDefault(); location.reload();
+    fetch(src).then(r=>{
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(data=>{
+      ALL = (data.posts||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+      buildCats(ALL);
+      render(ALL);
+    }).catch(err=>{
+      FEED.textContent='Failed to load posts.json — check the path and JSON syntax.'; console.error(err);
     });
+
+    sel.addEventListener('change', applyFilters);
+    q.addEventListener('input', applyFilters);
+    clear.addEventListener('click', e=>{ e.preventDefault(); sel.value=''; q.value=''; render(ALL); });
   </script>
 </body>
 </html>
