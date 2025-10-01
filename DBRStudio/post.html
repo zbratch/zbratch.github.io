@@ -64,11 +64,52 @@
       if (p.caption && String(p.caption).trim() !== '') capEl.textContent = p.caption;
       else capEl.remove();
 
-      if (p.link && String(p.link).trim() !== ''){
-        const a = document.createElement('a');
-        a.href = p.link; a.target='_blank'; a.rel='noopener';
-        a.textContent = 'External Link →'; linkEl.replaceChildren(a);
-      } else linkEl.remove();
+      if (p.link && String(p.link).trim() !== '') {
+  const url = p.link.trim();
+
+  // YouTube embed support
+  if (url.includes("youtube.com") || url.includes("youtu.be")) {
+    const iframe = document.createElement('iframe');
+    let embed = url;
+
+    // Convert normal YouTube watch links into embed links
+    if (url.includes("watch?v=")) {
+      const id = url.split("watch?v=")[1].split("&")[0];
+      embed = "https://www.youtube.com/embed/" + id;
+    } else if (url.includes("youtu.be/")) {
+      const id = url.split("youtu.be/")[1].split("?")[0];
+      embed = "https://www.youtube.com/embed/" + id;
+    }
+
+    iframe.src = embed;
+    iframe.width = "100%";
+    iframe.height = "500";
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    iframe.allowFullscreen = true;
+    iframe.style.borderRadius = "12px";
+    iframe.style.border = "0";
+    linkEl.replaceChildren(iframe);
+
+  // SoundCloud embed support
+  } else if (url.includes("soundcloud.com")) {
+    const iframe = document.createElement('iframe');
+    iframe.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(url);
+    iframe.width = "100%";
+    iframe.height = "166";
+    iframe.allow = "autoplay";
+    iframe.style.borderRadius = "12px";
+    iframe.style.border = "0";
+    linkEl.replaceChildren(iframe);
+
+  // Fallback to normal link
+  } else {
+    const a = document.createElement('a');
+    a.href = url; a.target='_blank'; a.rel='noopener';
+    a.textContent = 'Listen / View →';
+    linkEl.replaceChildren(a);
+  }
+} else linkEl.remove();
+
 
       if (Array.isArray(p.tags) && p.tags.length){
         tagsEl.textContent = 'Tags: ' + p.tags.map(t=>'#'+t).join(' ');

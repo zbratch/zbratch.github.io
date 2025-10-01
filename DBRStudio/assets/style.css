@@ -2,8 +2,9 @@
   --max: 1000px;
   --bg:#ffffff;        /* main background (white) */
   --card:#ffffff;      /* card background */
-  --muted:#555555;     /* muted text (grey/black mix) */
+  --muted:#555555;     /* muted text (grey) */
   --accent:#c62828;    /* red accent */
+  --accent-hover:#a51e1e;
   --text:#111111;      /* main text (black) */
   --border:#dddddd;    /* light grey borders */
   --chip:#f3f3f3;      /* light background for tags */
@@ -20,17 +21,29 @@ body{
 
 main{max-width:var(--max); margin:32px auto; padding:0 16px}
 
+/* ---------------- Header & Nav ---------------- */
 header{margin-bottom:16px}
-header h1{margin:0;font-size:28px;letter-spacing:.2px; color:var(--text);}
+header h1{margin:0;font-size:28px;letter-spacing:.2px;color:var(--text)}
 header p{margin:6px 0 0;color:var(--muted)}
+
 nav{margin-top:8px; display:flex; gap:10px; flex-wrap:wrap}
 nav a{
-  color:var(--accent); text-decoration:none; padding:4px 8px; border-radius:8px;
+  display:inline-block;
+  background: var(--accent);     /* red button */
+  color:#fff;                    /* white text */
+  font-weight:600;
+  text-decoration:none;
+  padding:6px 14px;
+  border-radius:8px;
+  border:1px solid var(--accent);
+  transition: background .15s ease, border-color .15s ease, transform .05s ease;
 }
-nav a:hover{background:#fbe9e7}
+nav a:hover{ background:var(--accent-hover); border-color:var(--accent-hover) }
+nav a:active{ transform: translateY(1px) }
 
 hr{border:0; border-top:1px solid var(--border); margin:16px 0 20px}
 
+/* ---------------- Toolbar (filters/search) ---------------- */
 .toolbar{
   background:#fafafa; border:1px solid var(--border);
   padding:10px; border-radius:12px; margin-bottom:16px;
@@ -41,17 +54,25 @@ hr{border:0; border-top:1px solid var(--border); margin:16px 0 20px}
   padding:10px 12px; border-radius:10px; outline:none; min-width:180px;
 }
 .input{flex:1}
+.select:focus, .input:focus, .button:focus, nav a:focus{
+  outline:2px solid var(--accent); outline-offset:2px;
+}
+
+/* Buttons (for any extra actions) */
 .button{
   padding:10px 14px; border-radius:10px;
   border:1px solid var(--accent);
   background:var(--accent); color:#fff;
   cursor:pointer;
+  transition: background .15s ease, border-color .15s ease, transform .05s ease;
 }
+.button:hover{ background:var(--accent-hover); border-color:var(--accent-hover) }
 .button.ghost{
   background:transparent; color:var(--accent); border-color:var(--accent);
 }
-.button:active{transform:translateY(1px)}
+.button.ghost:hover{ color:#fff; background:var(--accent); }
 
+/* ---------------- Grid & Cards ---------------- */
 .grid{
   display:grid; gap:14px; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
 }
@@ -64,9 +85,24 @@ hr{border:0; border-top:1px solid var(--border); margin:16px 0 20px}
 .card:hover{ transform: translateY(-2px); }
 .card img{ width:100%; display:block; aspect-ratio: 16/10; object-fit:cover; }
 .card .pad{ padding:12px; }
-.card h3{ margin:6px 0 4px; font-size:18px; color:var(--text); }
+
+/* Title links: always black, no purple visited state */
+.card h3{ margin:6px 0 4px; font-size:18px }
+.card h3 a,
+.card h3 a:visited,
+a.title,
+a.title:visited{
+  color: var(--text);
+  text-decoration: none;
+}
+.card h3 a:hover,
+a.title:hover{
+  color: var(--accent);
+}
+
+/* Meta, caption, tags */
 .meta{ color:var(--muted); font-size:13px; margin-bottom:8px }
-.caption{ margin:0 0 8px; color:var(--text); }
+.caption{ margin:0 0 8px; color:var(--text) }
 .tags{ display:flex; flex-wrap:wrap; gap:6px }
 .tag{
   background:var(--chip); border:1px solid var(--border);
@@ -74,10 +110,18 @@ hr{border:0; border-top:1px solid var(--border); margin:16px 0 20px}
   padding:4px 8px; border-radius:999px; text-decoration:none
 }
 
-.detail-img{
-  width:100%; height:auto; display:block; border-radius:12px; margin:12px 0
-}
+/* ---------------- Post page ---------------- */
+.detail-img{ width:100%; height:auto; display:block; border-radius:12px; margin:12px 0 }
+#post h2{ color:var(--text); margin:0 0 8px }  /* ensure black heading */
+
+/* ---------------- Page blocks (submit, etc.) ---------------- */
 .page{
   background:var(--card); border:1px solid var(--border); border-radius:14px; padding:16px
 }
 iframe{ width:100%; min-height:900px; border:0; border-radius:12px; background:#fafafa }
+
+/* ---------------- Small screens ---------------- */
+@media (max-width: 520px){
+  nav a{ padding:6px 10px }
+  .select{ min-width: 140px }
+}
