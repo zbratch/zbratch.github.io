@@ -47,7 +47,31 @@
 "link": "",
 "tags": ["Photos"],
 "date": "2025-09-16T11:41:50-05:00"
-}
+},
+{
+"id": "5",
+"title": "Natural Satelite ",
+"author": "Jerry Chavez",
+"email": "gchavez@dbrinc.com",
+"category": "Photos",
+"caption": "With a cheap 800mm lens I found on Facebook Marketplace.",
+"image": "media/Moon_Jerry Chavez.JPG",
+"link": "",
+"tags": ["Photos"],
+"date": "2025-10-08T09:22:40-05:00"
+},
+{
+"id": "6",
+"title": "Natural Satelite ",
+"author": "Jerry Chavez",
+"email": "gchavez@dbrinc.com",
+"category": "Photos",
+"caption": "With a cheap 800mm lens I found on Facebook Marketplace.",
+"image": "media/Setup_Jerry Chavez.JPG",
+"link": "",
+"tags": ["Photos"],
+"date": "2025-10-08T09:22:40-05:00"
+},
 ]
 }
 
