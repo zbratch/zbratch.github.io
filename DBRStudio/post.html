@@ -1,137 +1,127 @@
-<script>
-  const params = new URLSearchParams(location.search);
-  const id  = params.get('id');
-  const src = 'data/posts.json?v=' + Date.now();
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>DBR Studio — Post</title>
+  <link rel="stylesheet" href="assets/style.css"/>
+</head>
+<body>
+  <main>
+    <header>
+      <h1><a href="index.html" style="text-decoration:none;color:inherit">DBR Studio</a></h1>
+      <p>Photos • Art • Music — by our members</p>
+      <nav><a href="index.html">Home</a></nav>
+      <hr/>
+    </header>
 
-  const fmtDate = iso => {
-    try { return new Date(iso).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }
-    catch { return iso||''; }
-  };
+    <section class="page">
+      <article id="post">
+        <h2 id="title">Loading…</h2>
+        <div id="meta" class="meta"></div>
+        <div id="image-wrap"></div>
+        <p id="caption"></p>
+        <p id="link"></p>
+        <p id="tags"></p>
+      </article>
+      <div style="margin-top: 20px; text-align:center;">
+        <a href="https://forms.office.com/Pages/ResponsePage.aspx?id=1OjvY0kWaU-RKUunjsSn-yzaOEa3C_NNnamLlcj4gLVUNVpQSzlUSDlUUlJTTU9NTkVBR1VEWlFSWCQlQCN0PWcu" target="_blank" rel="noopener" class="button">
+          Report this Post
+        </a>
+      </div>
+    </section>
+  </main>
 
-  fetch(src).then(r=>{
-    if(!r.ok) throw new Error('HTTP '+r.status);
-    return r.json();
-  }).then(data=>{
-    const p = (data.posts||[]).find(x=>String(x.id)===String(id));
-    const titleEl = document.getElementById('title');
-    const metaEl  = document.getElementById('meta');
-    const capEl   = document.getElementById('caption');
-    const linkEl  = document.getElementById('link');
-    const imgWrap = document.getElementById('image-wrap');
-    const tagsEl  = document.getElementById('tags');
+  <script>
+    const params = new URLSearchParams(location.search);
+    const id  = params.get('id');
+    const src = 'data/posts.json?v=' + Date.now();
 
-    if(!p){ titleEl.textContent='Post not found'; return; }
+    const fmtDate = iso => {
+      try { return new Date(iso).toLocaleDateString(undefined,{year:'numeric',month:'short',day:'numeric'}); }
+      catch { return iso||''; }
+    };
 
-    document.title = 'DBR Studio — ' + (p.title||'Untitled');
-    titleEl.textContent = p.title || 'Untitled';
-    metaEl.textContent = [p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
+    fetch(src).then(r=>{
+      if(!r.ok) throw new Error('HTTP '+r.status);
+      return r.json();
+    }).then(data=>{
+      const p = (data.posts||[]).find(x=>String(x.id)===String(id));
+      const titleEl = document.getElementById('title');
+      const metaEl  = document.getElementById('meta');
+      const capEl   = document.getElementById('caption');
+      const linkEl  = document.getElementById('link');
+      const imgWrap = document.getElementById('image-wrap');
+      const tagsEl  = document.getElementById('tags');
 
-    if (p.image && String(p.image).trim() !== ''){
-      const img = new Image();
-      img.src = p.image; img.alt = p.title || ''; img.className='detail-img';
-      imgWrap.replaceChildren(img);
-    } else imgWrap.remove();
+      if(!p){ titleEl.textContent='Post not found'; return; }
 
-    if (p.caption && String(p.caption).trim() !== '') capEl.textContent = p.caption;
-    else capEl.remove();
+      document.title = 'DBR Studio — ' + (p.title||'Untitled');
+      titleEl.textContent = p.title || 'Untitled';
+      metaEl.textContent = [p.author, fmtDate(p.date), p.category].filter(Boolean).join(' · ');
 
-    // ---------- NEW: support p.links[] (preferred) + legacy p.link ----------
-    const urls = [];
-    if (Array.isArray(p.links)) {
-      p.links.forEach(u => { if (u && String(u).trim() !== '') urls.push(String(u).trim()); });
-    } else if (p.link && String(p.link).trim() !== '') {
-      urls.push(String(p.link).trim());
+      if (p.image && String(p.image).trim() !== ''){
+        const img = new Image();
+        img.src = p.image; img.alt = p.title || ''; img.className='detail-img';
+        imgWrap.replaceChildren(img);
+      } else imgWrap.remove();
+
+      if (p.caption && String(p.caption).trim() !== '') capEl.textContent = p.caption;
+      else capEl.remove();
+
+      if (p.link && String(p.link).trim() !== '') {
+  const url = p.link.trim();
+
+  // YouTube embed support
+  if (url.includes("youtube.com") || url.includes("youtu.be")) {
+    const iframe = document.createElement('iframe');
+    let embed = url;
+
+    // Convert normal YouTube watch links into embed links
+    if (url.includes("watch?v=")) {
+      const id = url.split("watch?v=")[1].split("&")[0];
+      embed = "https://www.youtube.com/embed/" + id;
+    } else if (url.includes("youtu.be/")) {
+      const id = url.split("youtu.be/")[1].split("?")[0];
+      embed = "https://www.youtube.com/embed/" + id;
     }
 
-    if (urls.length) {
-      const frag = document.createDocumentFragment();
+    iframe.src = embed;
+    iframe.width = "100%";
+    iframe.height = "500";
+    iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
+    iframe.allowFullscreen = true;
+    iframe.style.borderRadius = "12px";
+    iframe.style.border = "0";
+    linkEl.replaceChildren(iframe);
 
-      urls.forEach((url, i) => {
-        const block = document.createElement('div');
-        block.style.marginTop = i === 0 ? "0" : "14px";
+  // SoundCloud embed support
+  } else if (url.includes("soundcloud.com")) {
+    const iframe = document.createElement('iframe');
+    iframe.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(url);
+    iframe.width = "100%";
+    iframe.height = "166";
+    iframe.allow = "autoplay";
+    iframe.style.borderRadius = "12px";
+    iframe.style.border = "0";
+    linkEl.replaceChildren(iframe);
 
-        const lower = url.toLowerCase();
+  // Fallback to normal link
+  } else {
+    const a = document.createElement('a');
+    a.href = url; a.target='_blank'; a.rel='noopener';
+    a.textContent = 'Listen / View →';
+    linkEl.replaceChildren(a);
+  }
+} else linkEl.remove();
 
-        // YouTube embed support
-        if (url.includes("youtube.com") || url.includes("youtu.be")) {
-          const iframe = document.createElement('iframe');
-          let embed = url;
 
-          if (url.includes("watch?v=")) {
-            const vid = url.split("watch?v=")[1].split("&")[0];
-            embed = "https://www.youtube.com/embed/" + vid;
-          } else if (url.includes("youtu.be/")) {
-            const vid = url.split("youtu.be/")[1].split("?")[0];
-            embed = "https://www.youtube.com/embed/" + vid;
-          }
-
-          iframe.src = embed;
-          iframe.width = "100%";
-          iframe.height = "500";
-          iframe.allow = "accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture";
-          iframe.allowFullscreen = true;
-          iframe.style.borderRadius = "12px";
-          iframe.style.border = "0";
-          block.appendChild(iframe);
-
-        // SoundCloud embed support
-        } else if (url.includes("soundcloud.com")) {
-          const iframe = document.createElement('iframe');
-          iframe.src = "https://w.soundcloud.com/player/?url=" + encodeURIComponent(url);
-          iframe.width = "100%";
-          iframe.height = "166";
-          iframe.allow = "autoplay";
-          iframe.style.borderRadius = "12px";
-          iframe.style.border = "0";
-          block.appendChild(iframe);
-
-        // Video embed support (.mp4/.webm)
-        } else if (lower.endsWith(".mp4") || lower.endsWith(".webm")) {
-          const video = document.createElement('video');
-          video.controls = true;
-          video.playsInline = true;
-          video.preload = "metadata";
-          video.style.width = "100%";
-          video.style.borderRadius = "12px";
-
-          const source = document.createElement('source');
-          source.src = url;
-          if (lower.endsWith('.mp4')) source.type = 'video/mp4';
-          else if (lower.endsWith('.webm')) source.type = 'video/webm';
-          video.appendChild(source);
-
-          // Fallback link if browser can’t play it
-          const fallback = document.createElement('div');
-          fallback.style.marginTop = "8px";
-          const a = document.createElement('a');
-          a.href = url; a.target = '_blank'; a.rel = 'noopener';
-          a.textContent = 'Open video in new tab →';
-          fallback.appendChild(a);
-
-          block.appendChild(video);
-          block.appendChild(fallback);
-
-        // Fallback to normal link
-        } else {
-          const a = document.createElement('a');
-          a.href = url; a.target='_blank'; a.rel='noopener';
-          a.textContent = 'Listen / View →';
-          block.appendChild(a);
-        }
-
-        frag.appendChild(block);
-      });
-
-      linkEl.replaceChildren(frag);
-    } else {
-      linkEl.remove();
-    }
-    // ---------- END NEW BLOCK ----------
-
-    if (Array.isArray(p.tags) && p.tags.length){
-      tagsEl.textContent = 'Tags: ' + p.tags.map(t=>'#'+t).join(' ');
-    } else tagsEl.remove();
-  }).catch(err=>{
-    document.getElementById('title').textContent = 'Error loading post.'; console.error(err);
-  });
-</script>
+      if (Array.isArray(p.tags) && p.tags.length){
+        tagsEl.textContent = 'Tags: ' + p.tags.map(t=>'#'+t).join(' ');
+      } else tagsEl.remove();
+    }).catch(err=>{
+      document.getElementById('title').textContent = 'Error loading post.'; console.error(err);
+    });
+  </script>
+</body>
+</html>
