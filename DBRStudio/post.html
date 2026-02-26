@@ -35,16 +35,7 @@
     if (p.caption && String(p.caption).trim() !== '') capEl.textContent = p.caption;
     else capEl.remove();
 
-    // -------------------- UPDATED: multi-link (.mov/.mp4/.webm) support --------------------
-    // Supports BOTH:
-    //   - legacy single string: p.link
-    //   - new array:            p.links  (preferred)
-    //
-    // Your JSON can now include:
-    //   "links": ["assets/video/a.mov", "assets/video/b.mov", "https://youtu.be/..."]
-    //
-    // If "links" is present, it will be used. Otherwise it falls back to "link".
-
+    // ---------- NEW: support p.links[] (preferred) + legacy p.link ----------
     const urls = [];
     if (Array.isArray(p.links)) {
       p.links.forEach(u => { if (u && String(u).trim() !== '') urls.push(String(u).trim()); });
@@ -66,7 +57,6 @@
           const iframe = document.createElement('iframe');
           let embed = url;
 
-          // Convert normal YouTube watch links into embed links
           if (url.includes("watch?v=")) {
             const vid = url.split("watch?v=")[1].split("&")[0];
             embed = "https://www.youtube.com/embed/" + vid;
@@ -95,8 +85,8 @@
           iframe.style.border = "0";
           block.appendChild(iframe);
 
-        // Local/hosted video support (.mov/.mp4/.webm)
-        } else if (lower.endsWith(".mov") || lower.endsWith(".mp4") || lower.endsWith(".webm")) {
+        // Video embed support (.mp4/.webm)
+        } else if (lower.endsWith(".mp4") || lower.endsWith(".webm")) {
           const video = document.createElement('video');
           video.controls = true;
           video.playsInline = true;
@@ -106,23 +96,20 @@
 
           const source = document.createElement('source');
           source.src = url;
-
-          // Best-effort MIME hint
           if (lower.endsWith('.mp4')) source.type = 'video/mp4';
           else if (lower.endsWith('.webm')) source.type = 'video/webm';
-          else if (lower.endsWith('.mov')) source.type = 'video/quicktime';
-
           video.appendChild(source);
 
-          // Fallback link if the browser can’t play it
-          const pFallback = document.createElement('p');
-          const aFallback = document.createElement('a');
-          aFallback.href = url; aFallback.target = '_blank'; aFallback.rel = 'noopener';
-          aFallback.textContent = 'Open video in new tab →';
-          pFallback.appendChild(aFallback);
-          video.appendChild(pFallback);
+          // Fallback link if browser can’t play it
+          const fallback = document.createElement('div');
+          fallback.style.marginTop = "8px";
+          const a = document.createElement('a');
+          a.href = url; a.target = '_blank'; a.rel = 'noopener';
+          a.textContent = 'Open video in new tab →';
+          fallback.appendChild(a);
 
           block.appendChild(video);
+          block.appendChild(fallback);
 
         // Fallback to normal link
         } else {
@@ -139,7 +126,7 @@
     } else {
       linkEl.remove();
     }
-    // -------------------- END UPDATED BLOCK --------------------
+    // ---------- END NEW BLOCK ----------
 
     if (Array.isArray(p.tags) && p.tags.length){
       tagsEl.textContent = 'Tags: ' + p.tags.map(t=>'#'+t).join(' ');
