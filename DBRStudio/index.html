@@ -75,6 +75,18 @@
       return null;
     }
 
+    function getPostLinks(p){
+      const out = [];
+      if (Array.isArray(p.links)) {
+        for (const u of p.links) {
+          if (u && String(u).trim() !== '') out.push(String(u).trim());
+        }
+      } else if (p.link && String(p.link).trim() !== '') {
+        out.push(String(p.link).trim());
+      }
+      return out;
+    }
+
     function render(list){
       FEED.replaceChildren();
       if (!list.length){ FEED.textContent='No posts match.'; return; }
@@ -97,13 +109,18 @@
         if (p.image && String(p.image).trim() !== ''){
           imgEl.src = p.image; imgEl.alt = title; imgWrap.href = link;
           showedImg = true;
-        } else if (p.link){
-          const id = ytIdFrom(String(p.link));
-          if (id){
-            imgEl.src = 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg';
-            imgEl.alt = title + ' (YouTube)';
-            imgWrap.href = link;
-            showedImg = true;
+        } else {
+          const links = getPostLinks(p);
+          // Use first YouTube link (if any) to show a thumbnail fallback
+          const yt = links.find(u => u.includes('youtube.com') || u.includes('youtu.be'));
+          if (yt){
+            const id = ytIdFrom(String(yt));
+            if (id){
+              imgEl.src = 'https://img.youtube.com/vi/' + id + '/hqdefault.jpg';
+              imgEl.alt = title + ' (YouTube)';
+              imgWrap.href = link;
+              showedImg = true;
+            }
           }
         }
         if (!showedImg){ imgWrap.remove(); }
@@ -119,19 +136,22 @@
 
         // Badge row for links
         const badgeRow = node.querySelector('.badge-row');
-        if (p.link && String(p.link).trim() !== ''){
-          const url = p.link.trim();
+        const links = getPostLinks(p);
+        if (links.length){
+          const url = links[0];
           const a = document.createElement('a');
           a.className = 'badge';
           a.target = '_blank'; a.rel = 'noopener';
           a.href = url;
 
+          const more = links.length > 1 ? ` +${links.length - 1}` : '';
+
           if (url.includes('youtube.com') || url.includes('youtu.be')){
-            a.innerHTML = '<span class="ico">▶</span><span>Watch</span>';
+            a.innerHTML = '<span class="ico">▶</span><span>Watch' + more + '</span>';
           } else if (url.includes('soundcloud.com')){
-            a.innerHTML = '<span class="ico">♪</span><span>Listen</span>';
+            a.innerHTML = '<span class="ico">♪</span><span>Listen' + more + '</span>';
           } else {
-            a.innerHTML = '<span class="ico">↗</span><span>Open</span>';
+            a.innerHTML = '<span class="ico">↗</span><span>Open' + more + '</span>';
           }
           badgeRow.appendChild(a);
         } else {
