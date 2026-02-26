@@ -119,11 +119,11 @@
         const more = links.length > 1 ? ` +${links.length - 1}` : '';
 
         if (url.includes('youtube.com') || url.includes('youtu.be')){
-          a.innerHTML = '<span class="ico">▶</span><span>Watch' + more + '</span>';
+          a.innerHTML = '<span class="ico"></span><span>Watch' + more + '</span>';
         } else if (url.includes('soundcloud.com')){
-          a.innerHTML = '<span class="ico">♪</span><span>Listen' + more + '</span>';
+          a.innerHTML = '<span class="ico"></span><span>Listen' + more + '</span>';
         } else if (url.toLowerCase().endsWith('.mp4') || url.toLowerCase().endsWith('.webm')) {
-          a.innerHTML = '<span class="ico">▶</span><span>Play' + more + '</span>';
+          a.innerHTML = '<span class="ico"></span><span>Play' + more + '</span>';
         } else {
           a.innerHTML = '<span class="ico">↗</span><span>Open' + more + '</span>';
         }
